@@ -71,6 +71,8 @@ class LeitorConfiguracao:
         return ConfiguracaoProjeto(
             alvo=str(proj.get("alvo", "Valor_da_Venda")),
             seed=int(proj.get("seed", 42)),
+            total_passos=int(proj.get("total_passos", conteudo.get("total_passos", 12))),
+            test_size=float(proj.get("test_size", val.get("test_size", conteudo.get("test_size", 0.20)))),
             n_splits=int(val.get("n_splits", 5)),
             n_repeats=int(val.get("n_repeats", 30)),
             alpha_friedman=float(val.get("alpha_friedman", 0.05)),

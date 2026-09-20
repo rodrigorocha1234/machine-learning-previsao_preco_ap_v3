@@ -13,6 +13,8 @@ class ConfiguracaoProjeto:
     # Projeto
     alvo: str = "Valor_da_Venda"
     seed: int = 42
+    total_passos: int = 12
+    test_size: float = 0.20
 
     # Validação
     n_splits: int = 5

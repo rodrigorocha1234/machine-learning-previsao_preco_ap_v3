@@ -56,6 +56,42 @@ class CalculadorMetricasImobiliaria:
             preco_medio=float(np.mean(y_true_arr)),
         )
 
+        # Margem de negociação estimada (R$) = média de (Valor_Previsto - Valor_Com_Desconto)
+        valores_com_desconto = y_pred_arr * (1.0 - (desconto_seguro / 100.0))
+        margem_negociacao_estimada = float(np.mean(y_pred_arr - valores_com_desconto))
+
+        # Receita potencial perdida por subavaliação (quando y_pred < y_real)
+        subavaliacoes = np.maximum(0.0, y_true_arr - y_pred_arr)
+        receita_potencial_perdida = float(np.sum(subavaliacoes))
+
+        # Tabela de cobertura de tolerância
+        total_obs = len(y_true_arr)
+        tabela_cobertura = pd.DataFrame(
+            [
+                {
+                    "faixa_tolerancia": "±5%",
+                    "tolerancia_relativa": 0.05,
+                    "cobertura_percentual": round(cobertura_5 * 100.0, 2),
+                    "imoveis_atendidos": int(np.sum(erros_relativos <= 0.05)),
+                    "total_imoveis": total_obs,
+                },
+                {
+                    "faixa_tolerancia": "±10%",
+                    "tolerancia_relativa": 0.10,
+                    "cobertura_percentual": round(cobertura_10 * 100.0, 2),
+                    "imoveis_atendidos": int(np.sum(erros_relativos <= 0.10)),
+                    "total_imoveis": total_obs,
+                },
+                {
+                    "faixa_tolerancia": "±15%",
+                    "tolerancia_relativa": 0.15,
+                    "cobertura_percentual": round(cobertura_15 * 100.0, 2),
+                    "imoveis_atendidos": int(np.sum(erros_relativos <= 0.15)),
+                    "total_imoveis": total_obs,
+                },
+            ]
+        )
+
         df_analise = pd.DataFrame(
             {
                 "real": y_true_arr,
@@ -112,6 +148,9 @@ class CalculadorMetricasImobiliaria:
             desconto_seguro_recomendado=desconto_seguro,
             risco_subprecificacao=risco_subprecificacao,
             risco_superprecificacao=risco_superprecificacao,
+            margem_negociacao_estimada=margem_negociacao_estimada,
+            receita_potencial_perdida=receita_potencial_perdida,
             tabela_erro_por_faixa=tabela_faixas,
             tabela_erro_por_zona=tabela_zona,
+            tabela_cobertura_tolerancia=tabela_cobertura,
         )

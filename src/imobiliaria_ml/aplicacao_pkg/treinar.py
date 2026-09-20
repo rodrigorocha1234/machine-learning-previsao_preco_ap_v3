@@ -1,5 +1,6 @@
 """Ponto de entrada para o treinamento do pipeline de Machine Learning."""
 
+import logging
 from pathlib import Path
 import warnings
 from sklearn.exceptions import ConvergenceWarning

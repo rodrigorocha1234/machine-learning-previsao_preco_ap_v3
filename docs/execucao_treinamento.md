@@ -2,6 +2,8 @@
 
 Este documento descreve detalhadamente como configurar, executar e monitorar o pipeline completo de treinamento do projeto de Machine Learning para previsão de preços de imóveis (`Valor_da_Venda`).
 
+> Para detalhes conceituais sobre as políticas de desconto, alçadas comerciais e métricas imobiliárias, consulte o [Manual de Regras de Negócio](file:///home/rodrigo/PycharmProjects/machine-learning-previsao_preco_ap_v3/docs/regras_de_negocio.md).
+
 ---
 
 ## 1. Visão Geral da Arquitetura
@@ -142,6 +144,8 @@ O comportamento do treinamento é 100% parametrizável através de [`configuraca
 projeto:
   seed: 42                           # Semente para reprodutibilidade estrita
   alvo: Valor_da_Venda               # Nome da variável alvo contínua
+  total_passos: 12                   # Total de passos do pipeline (para mensagens de log)
+  test_size: 0.20                    # Proporção da base separada para Holdout Final (ex: 0.20 = 20%)
 
 validacao:
   n_splits: 5                        # Quantidade de folds na validação cruzada
