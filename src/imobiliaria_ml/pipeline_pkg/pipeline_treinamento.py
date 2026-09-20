@@ -207,18 +207,31 @@ class PipelineTreinamento(SujeitoObservavel):
             Modelo campeão treinado, avaliado e registrado.
         """
         warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        warnings.filterwarnings("ignore", category=UserWarning, module="sklearn.utils.parallel")
 
         # 1. Carregar dados
+        logger.info("================================================================================")
+        logger.info("INICIANDO PIPELINE OFICIAL DE MACHINE LEARNING — PREVISÃO DE PREÇO DE IMÓVEIS")
+        logger.info("Variável Alvo: %s | Semente Aleatória: %d", self._config.alvo, self._config.seed)
+        logger.info("================================================================================")
+        logger.info("[Passo 1/12] Carregando base de dados a partir de: %s", caminho_dados)
         dados = self.carregar_dados(caminho_dados)
+        logger.info(" -> Base carregada com sucesso: %d registros e %d colunas.", len(dados), len(dados.columns))
 
         # 2. Validar esquema e qualidade
+        logger.info("[Passo 2/12] Validando conformidade de esquema e integridade de qualidade...")
         self.validar_dados(dados)
+        logger.info(" -> Validação concluída: colunas obrigatórias presentes, sem duplicatas e dados válidos.")
 
         # 3. EDA obrigatória antes do treino
+        logger.info("[Passo 3/12] Executando Análise Exploratória de Dados (EDA) obrigatória...")
         self.executar_eda(dados)
+        logger.info(" -> EDA finalizada: correlações, estatísticas e gráficos de distribuição gerados em memória.")
 
         # 4. Separação desenvolvimento / holdout final
+        logger.info("[Passo 4/12] Separando base em Desenvolvimento (80%%) e Holdout de Teste (20%%)...")
         df_dev, df_holdout = self.separar_holdout(dados)
+        logger.info(" -> Base de Desenvolvimento: %d amostras | Holdout Final: %d amostras.", len(df_dev), len(df_holdout))
 
         X_dev = df_dev[list(self.COLUNAS_NUMERICAS) + list(self.COLUNAS_CATEGORICAS)]
         y_dev = df_dev[self._config.alvo]
@@ -231,7 +244,10 @@ class PipelineTreinamento(SujeitoObservavel):
         pipelines_otimizadas: dict[str, Pipeline] = {}
         candidatos_modelos: dict[str, CandidatoModelo] = {}
 
-        for tipo in tipos_candidatos:
+        logger.info("[Passo 5/12] Otimizando hiperparâmetros (GridSearchCV com %d splits) para %d modelos candidatos...", self._config.n_splits, len(tipos_candidatos))
+
+        for idx, tipo in enumerate(tipos_candidatos, start=1):
+            logger.info(" [%d/%d] Otimizando modelo: %s...", idx, len(tipos_candidatos), tipo.value)
             estrategia = self._fabrica_modelos.criar(tipo)
             pipeline_base = self._criar_pipeline_modelo(tipo)
 
@@ -246,6 +262,8 @@ class PipelineTreinamento(SujeitoObservavel):
                 X_treino=X_dev,
                 y_treino=y_dev,
             )
+
+            logger.info("   -> [%s] Concluído | Melhor RMSE (CV): R$ %s | Melhores parâmetros: %s", tipo.value, f"{res_grid.melhor_score_rmse:,.2f}", res_grid.melhores_parametros)
 
             self.notificar(
                 TipoEvento.GRIDSEARCH_FINALIZADO,
@@ -273,11 +291,13 @@ class PipelineTreinamento(SujeitoObservavel):
             )
 
         # 7. RepeatedKFold (30 repetições) com mesmas partições
+        logger.info("[Passo 6/12] Executando validação cruzada RepeatedKFold (%d splits x %d repetições = %d dobras por modelo)...", self._config.n_splits, self._config.n_repeats, self._config.n_splits * self._config.n_repeats)
         res_cv = self._validador_cv.validar_modelos(
             modelos_pipelines=pipelines_otimizadas,
             X_treino=X_dev,
             y_treino=y_dev,
         )
+        logger.info(" -> Validação cruzada RepeatedKFold concluída. Matriz 30 repetições gerada com sucesso.")
         self.notificar(
             TipoEvento.VALIDACAO_FINALIZADA,
             CargaEvento(
@@ -290,7 +310,14 @@ class PipelineTreinamento(SujeitoObservavel):
         )
 
         # 8. Testes estatísticos pós-validação cruzada: Friedman e Nemenyi
+        logger.info("[Passo 7/12] Aplicando testes estatísticos pós-validação cruzada (Friedman & Nemenyi)...")
         res_friedman = self._teste_friedman.executar(res_cv.matriz_repeticoes)
+        logger.info(" -> Teste de Friedman: Estatística Chi² = %.4f | p-valor = %.4e (alpha = %.2f)", res_friedman.estatistica, res_friedman.p_valor, res_friedman.alpha)
+        if res_friedman.significativo:
+            logger.info(" -> Diferença estatística significativa detectada (p < alpha).")
+        else:
+            logger.info(" -> Não foi detectada diferença estatisticamente significativa entre os modelos.")
+
         self.notificar(
             TipoEvento.FRIEDMAN_FINALIZADO,
             CargaEvento(
@@ -309,24 +336,34 @@ class PipelineTreinamento(SujeitoObservavel):
 
         res_nemenyi = self._teste_nemenyi.executar(res_cv.matriz_repeticoes, res_friedman)
         if res_nemenyi.executado:
+            logger.info(" -> Pós-teste de Nemenyi executado: Distância Crítica (CD) = %.4f", res_nemenyi.distancia_critica)
             self.notificar(
                 TipoEvento.NEMENYI_FINALIZADO,
                 CargaEvento(valores={"matriz_p_valores": res_nemenyi.matriz_p_valores}),
             )
+        else:
+            logger.info(" -> Pós-teste de Nemenyi não necessário ou tratamentos insuficientes.")
 
         # 9. Formação do grupo estatisticamente elegível
+        logger.info("[Passo 8/12] Delimitando o Grupo Estatisticamente Elegível...")
         grupo = self._seletor_campeao.selecionar_grupo(res_cv, res_friedman, res_nemenyi)
         melhor_individual_nome = grupo.melhor_modelo
         candidato_campeao_nome = melhor_individual_nome
         pipeline_campea = pipelines_otimizadas[melhor_individual_nome]
+        logger.info(" -> Melhor modelo individual: [%s] (RMSE médio CV: R$ %s)", melhor_individual_nome, f"{grupo.rmse_medios.get(melhor_individual_nome, 0.0):,.2f}")
+        logger.info(" -> Modelos elegíveis (%d): %s", len(grupo.modelos_elegiveis), ", ".join(grupo.modelos_elegiveis))
 
         # 10. Avaliação de votação / ensemble se usar_votacao=True
+        logger.info("[Passo 9/12] Avaliando estratégias de Ensemble (usar_votacao = %s)...", self._config.usar_votacao)
         if self._config.usar_votacao and len(grupo.modelos_elegiveis) >= 2:
             modelos_elegiveis = self._seletor_ensemble.filtrar_elegiveis(
                 pipelines_otimizadas, grupo
             )
             # Avalia votação ponderada por RMSE
             pesos_rmse = self._calculador_pesos_rmse.calcular(grupo.rmse_medios)
+            logger.info(" -> Modelos que compõem o Ensemble: %s", [m[0] for m in modelos_elegiveis])
+            logger.info(" -> Pesos atribuídos por RMSE: %s", {k: f"{v:.4f}" for k, v in pesos_rmse.items()})
+
             estrategia_voting = self._fabrica_ensemble.criar(
                 TipoEnsemble.VOTING_PONDERADO_RMSE, pesos_por_modelo=pesos_rmse
             )
@@ -365,21 +402,37 @@ class PipelineTreinamento(SujeitoObservavel):
             )
 
             # Compara com o melhor individual
-            if metricas_ens_dev.rmse < grupo.rmse_medios.get(melhor_individual_nome, float("inf")):
+            rmse_melhor_ind = grupo.rmse_medios.get(melhor_individual_nome, float("inf"))
+            if metricas_ens_dev.rmse < rmse_melhor_ind:
+                logger.info(" -> Ensemble SUPEROU o melhor individual! (RMSE Ensemble: R$ %s vs Individual: R$ %s)", f"{metricas_ens_dev.rmse:,.2f}", f"{rmse_melhor_ind:,.2f}")
                 candidato_campeao_nome = "ensemble_voting"
                 pipeline_campea = pipeline_ensemble
+            else:
+                logger.info(" -> Melhor individual [%s] superou o Ensemble (R$ %s vs R$ %s). Mantido individual.", melhor_individual_nome, f"{rmse_melhor_ind:,.2f}", f"{metricas_ens_dev.rmse:,.2f}")
         else:
+            logger.info(" -> Ensemble desativado ou modelos elegíveis insuficientes. Mantido modelo [%s].", candidato_campeao_nome)
             self.notificar(
                 TipoEvento.ENSEMBLE_FINALIZADO,
                 CargaEvento(valores={"usado": False}),
             )
 
         # 11. Treino final do campeão em todo o conjunto de desenvolvimento
+        logger.info("[Passo 10/12] Realizando treinamento final do campeão [%s] em 100%% da base de desenvolvimento (%d registros)...", candidato_campeao_nome, len(X_dev))
         pipeline_campea.fit(X_dev, y_dev)
+        logger.info(" -> Ajuste final do modelo campeão concluído com sucesso.")
 
         # 12. Avaliação única no Holdout Final
+        logger.info("[Passo 11/12] Avaliando campeão no Holdout Final inédito (%d registros) e calculando métricas imobiliárias...", len(X_holdout))
         y_pred_holdout = np.asarray(pipeline_campea.predict(X_holdout), dtype=float)
         metricas_holdout = self._calculador_metricas.calcular(y_holdout, y_pred_holdout)
+
+        logger.info("--------------------------------------------------------------------------------")
+        logger.info(" DESEMPENHO DO MODELO CAMPEÃO [%s] NO HOLDOUT FINAL:", candidato_campeao_nome)
+        logger.info("   * RMSE : R$ %s", f"{metricas_holdout.rmse:,.2f}")
+        logger.info("   * MAE  : R$ %s", f"{metricas_holdout.mae:,.2f}")
+        logger.info("   * R²   : %.4f", metricas_holdout.r2)
+        logger.info("   * MAPE : %.2f%%", metricas_holdout.mape)
+        logger.info("--------------------------------------------------------------------------------")
 
         self.notificar(
             TipoEvento.MODELO_CAMPEAO,
@@ -398,12 +451,14 @@ class PipelineTreinamento(SujeitoObservavel):
         )
 
         # 13. Diagnóstico de Underfitting/Overfitting via Curva de Aprendizado
+        logger.info(" -> Gerando Curva de Aprendizado e diagnóstico de Underfitting/Overfitting...")
         figura_curva, df_curva, diag_info = self._analisador_aprendizado.gerar_curva(
             modelo_pipeline=pipeline_campea,
             X_treino=X_dev,
             y_treino=y_dev,
             cv=self._config.n_splits,
         )
+        logger.info(" -> Diagnóstico da Curva de Aprendizado: %s", diag_info)
         self.notificar(
             TipoEvento.CURVA_APRENDIZADO_GERADA,
             CargaEvento(
@@ -416,6 +471,7 @@ class PipelineTreinamento(SujeitoObservavel):
         )
 
         # 14. Explicabilidade
+        logger.info(" -> Extraindo explicabilidade e importância das variáveis do campeão...")
         resultado_explicabilidade: ResultadoExplicabilidade | None = None
         estimador_interno = pipeline_campea.named_steps.get("modelo")
         if hasattr(estimador_interno, "coef_"):
@@ -428,6 +484,7 @@ class PipelineTreinamento(SujeitoObservavel):
                 equacao_texto=equacao,
                 interpretacao_texto=md_interp,
             )
+            logger.info(" -> Equação matemática extraída: %s", equacao)
         else:
             df_imp = self._explicador_imp.calcular_importancias(
                 pipeline_ajustada=pipeline_campea,
@@ -438,13 +495,20 @@ class PipelineTreinamento(SujeitoObservavel):
                 tipo_modelo=candidato_campeao_nome,
                 tabela_importancias=df_imp,
             )
+            logger.info(" -> Importâncias por permutação calculadas para %d features.", len(df_imp))
 
         # 15. Métricas de Negócio Imobiliário no Holdout
+        logger.info(" -> Consolidando métricas de negócio imobiliário (coberturas e desconto seguro)...")
         metricas_negocio = self._calculador_negocio.calcular_metricas(
             X_holdout=X_holdout,
             y_real=y_holdout,
             y_pred=y_pred_holdout,
         )
+        logger.info("   * Cobertura de Erro até  5%%: %.2f%%", metricas_negocio.cobertura_5 * 100)
+        logger.info("   * Cobertura de Erro até 10%%: %.2f%%", metricas_negocio.cobertura_10 * 100)
+        logger.info("   * Cobertura de Erro até 15%%: %.2f%%", metricas_negocio.cobertura_15 * 100)
+        logger.info("   * Desconto Seguro Recomendado: %.2f%%", metricas_negocio.desconto_seguro_recomendado)
+
         self.notificar(
             TipoEvento.METRICAS_NEGOCIO_FINALIZADAS,
             CargaEvento(
@@ -466,6 +530,7 @@ class PipelineTreinamento(SujeitoObservavel):
         )
 
         # 16. Registro do Modelo Campeão no Model Registry do MLflow
+        logger.info("[Passo 12/12] Registrando modelo campeão encapsulado em PyFunc no MLflow Model Registry...")
         uri_registro = self._registrador.registrar_modelo_campeao(
             pipeline_campea=pipeline_campea,
             metricas={
@@ -475,10 +540,15 @@ class PipelineTreinamento(SujeitoObservavel):
             },
             desconto_maximo=self._config.desconto_maximo_com_aprovacao,
         )
+        logger.info(" -> Modelo registrado no MLflow com alias @champion: %s", uri_registro)
+        logger.info("================================================================================")
+        logger.info("PIPELINE DE TREINAMENTO CONCLUÍDO COM SUCESSO!")
+        logger.info("================================================================================")
 
         return ResultadoTreinamento(
             modelo=pipeline_campea,
             metricas=metricas_holdout,
+            nome_campeao=candidato_campeao_nome,
             metricas_negocio=metricas_negocio,
             explicabilidade=resultado_explicabilidade,
             uri_registro=uri_registro,

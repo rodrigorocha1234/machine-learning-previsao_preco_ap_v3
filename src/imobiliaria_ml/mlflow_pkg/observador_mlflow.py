@@ -3,10 +3,12 @@
 import os
 from matplotlib.figure import Figure
 import mlflow
+from mlflow.tracking import MlflowClient
 import pandas as pd
 from ..enums_pkg.tipo_evento import TipoEvento
 from .evento_mlflow_protocol import EventoMlflowProtocol
 from .observador import Observador
+
 
 
 class ObservadorMlflow(Observador):
@@ -25,6 +27,10 @@ class ObservadorMlflow(Observador):
         """Define o Tracking URI e o experimento ativo."""
         try:
             mlflow.set_tracking_uri(self._tracking_uri)
+            client = MlflowClient(tracking_uri=self._tracking_uri)
+            exp = client.get_experiment_by_name(self._nome_experimento)
+            if exp is not None and exp.lifecycle_stage == "deleted":
+                client.restore_experiment(exp.experiment_id)
             mlflow.set_experiment(self._nome_experimento)
         except Exception:
             # Permite execução isolada se o servidor estiver offline

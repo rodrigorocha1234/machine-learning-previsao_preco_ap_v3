@@ -1,10 +1,17 @@
 """Ponto de entrada para o treinamento do pipeline de Machine Learning."""
 
 from pathlib import Path
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn.utils.parallel")
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
+
 from ..configuracao_pkg.leitor_configuracao import LeitorConfiguracao
 from ..pipeline_pkg.pipeline_treinamento import PipelineTreinamento
 from ..pipeline_pkg.resultado_treinamento import ResultadoTreinamento
 from ..modelos_pkg.regressor_protocol import RegressorProtocol
+
 
 
 class Treinar:
@@ -30,6 +37,11 @@ class Treinar:
         ResultadoTreinamento[RegressorProtocol]
             Resultado do modelo campeão treinado e registrado.
         """
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%H:%M:%S",
+        )
         config = self._leitor.carregar_do_arquivo(self._caminho_config)
         pipeline = PipelineTreinamento(configuracao=config)
         return pipeline.executar(caminho_dados)

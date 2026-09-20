@@ -1,11 +1,9 @@
-"""Registrador de modelo no MLflow Model Registry com alias @champion."""
-
+import os
 from pathlib import Path
 import mlflow
 from mlflow.tracking import MlflowClient
 from sklearn.pipeline import Pipeline
 from .modelo_imobiliario_pyfunc import ModeloImobiliarioPyFunc
-
 
 
 class RegistradorModelo:
@@ -14,9 +12,11 @@ class RegistradorModelo:
     def __init__(
         self,
         nome_modelo: str = "preco-imoveis",
+        tracking_uri: str | None = None,
     ) -> None:
         self._nome_modelo = nome_modelo
-        self._client = MlflowClient()
+        self._tracking_uri = tracking_uri or os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+        self._client = MlflowClient(tracking_uri=self._tracking_uri)
 
     def registrar_modelo_campeao(
         self,
@@ -54,14 +54,19 @@ class RegistradorModelo:
             artifact_path="modelo_imobiliario",
             python_model=modelo_pyfunc,
             registered_model_name=self._nome_modelo,
-            code_path=code_paths,
+            code_paths=code_paths,
         )
 
         try:
-            # Obtém a versão mais recente e atribui alias champion
-            versoes = self._client.search_model_versions(f"name='{self._nome_modelo}'")
-            if versoes:
-                versao_recente = str(versoes[0].version)
+            versao_recente: str | None = None
+            if hasattr(info_modelo, "registered_model_version") and info_modelo.registered_model_version:
+                versao_recente = str(info_modelo.registered_model_version)
+            else:
+                versoes = self._client.search_model_versions(f"name='{self._nome_modelo}'")
+                if versoes:
+                    versao_recente = str(versoes[0].version)
+
+            if versao_recente:
                 self._client.set_registered_model_alias(
                     name=self._nome_modelo,
                     alias="champion",

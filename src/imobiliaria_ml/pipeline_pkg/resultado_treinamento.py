@@ -16,6 +16,8 @@ class ResultadoTreinamento(Generic[TModelo]):
 
     modelo: TModelo
     metricas: MetricasRegressao
+    nome_campeao: str = ""
     metricas_negocio: MetricasNegocioResultado | None = None
     explicabilidade: ResultadoExplicabilidade | None = None
     uri_registro: str = ""
+

@@ -142,14 +142,15 @@ services:
       - |
         pip install --no-cache-dir psycopg2-binary boto3 scikit-learn pandas xgboost lightgbm catboost
         python -c "
-        import urllib.request, time
-        url = 'http://mlflow-server:5000/api/2.0/mlflow/registered-models/alias/get?name=preco-imoveis&alias=champion'
+        import time
+        from mlflow.tracking import MlflowClient
+        client = MlflowClient('http://mlflow-server:5000')
         print('Aguardando o modelo preco-imoveis@champion ser registrado no MLflow...')
         while True:
             try:
-                res = urllib.request.urlopen(url)
-                if res.getcode() == 200:
-                    print('Modelo preco-imoveis@champion encontrado! Iniciando serving...')
+                mv = client.get_model_version_by_alias('preco-imoveis', 'champion')
+                if mv:
+                    print(f'Modelo preco-imoveis@champion encontrado (versão {mv.version})! Iniciando serving...')
                     break
             except Exception:
                 pass
