@@ -28,6 +28,7 @@ class ObservadorMlflow(Observador):
         self._usar_votacao = usar_votacao
         self._child_run_ativa = False
         self._runs_modelos: dict[str, str] = {}
+        self._equacoes_modelos: dict[str, str] = {}
         self._nome_campeao: str | None = None
         self._configurar_mlflow()
 
@@ -49,6 +50,43 @@ class ObservadorMlflow(Observador):
         except Exception:
             # Permite execução isolada se o servidor estiver offline
             pass
+
+    def _salvar_todas_equacoes_modelos(self, nome_campeao: str) -> None:
+        """Gera e registra o arquivo consolidado com as equações de todos os modelos no MLflow."""
+        if not self._equacoes_modelos:
+            return
+        linhas: list[str] = [
+            "=" * 90,
+            "PAINEL CONSOLIDADO DE EQUAÇÕES MATEMÁTICAS - MLFLOW",
+            "PROJETO: Previsão de Preço de Imóveis",
+            "=" * 90,
+            "",
+            f">>> MODELO CAMPEÃO SELECIONADO: {nome_campeao.upper()} <<<",
+            "",
+        ]
+        if nome_campeao in self._equacoes_modelos:
+            linhas.append(self._equacoes_modelos[nome_campeao])
+            linhas.append("")
+
+        linhas.extend(
+            [
+                "=" * 90,
+                "EQUAÇÃO DE CADA MODELO CANDIDATO (OTIMIZADO NO GRID SEARCH)",
+                "=" * 90,
+                "",
+            ]
+        )
+        for idx, (mod_nome, eq_conteudo) in enumerate(sorted(self._equacoes_modelos.items()), start=1):
+            sufixo = " [CAMPEÃO]" if mod_nome == nome_campeao else ""
+            linhas.append(f"--- MODELO #{idx}: {mod_nome.upper()}{sufixo} ---")
+            linhas.append(eq_conteudo)
+            linhas.append("")
+
+        linhas.append("=" * 90)
+        texto_consolidado = "\n".join(linhas)
+        mlflow.log_text(texto_consolidado, "explicabilidade/todas_equacoes_modelos.txt")
+        mlflow.log_text(texto_consolidado, "todas_equacoes_modelos.txt")
+
 
     @staticmethod
     def _obter_familia_modelo(nome_modelo: str) -> str:
@@ -111,6 +149,7 @@ class ObservadorMlflow(Observador):
                 mlflow.end_run()
             self._child_run_ativa = False
             self._runs_modelos.clear()
+            self._equacoes_modelos.clear()
         except Exception:
             pass
 
@@ -136,12 +175,28 @@ class ObservadorMlflow(Observador):
                     self._garantir_run_pai()
                     mlflow.set_tag("etapa_eda", "concluida")
                     for k, v in payload.items():
-                        if isinstance(v, pd.DataFrame):
+                        if isinstance(v, pd.DataFrame) and not v.empty:
                             mlflow.log_table(data=v, artifact_file=f"eda/{k}.json")
+                            try:
+                                mlflow.log_text(text=v.to_csv(index=False), artifact_file=f"eda/{k}.csv")
+                            except Exception:
+                                pass
                         elif isinstance(v, Figure):
                             mlflow.log_figure(figure=v, artifact_file=f"eda/{k}.png")
-                        elif isinstance(v, dict):
+                        elif isinstance(v, dict) and v:
                             mlflow.log_dict(dictionary=v, artifact_file=f"eda/{k}.json")
+                        elif isinstance(v, str) and v.strip():
+                            mlflow.log_text(text=v, artifact_file=f"eda/{k}.md")
+
+                    if "diagnostico_zonas" in payload and isinstance(payload["diagnostico_zonas"], dict):
+                        for tag_k in ("zona_mais_valorizada", "zona_mais_acessivel", "fator_gradiente_espacial", "zona_maior_liquidez"):
+                            if tag_k in payload["diagnostico_zonas"]:
+                                mlflow.set_tag(f"eda_{tag_k}", str(payload["diagnostico_zonas"][tag_k]))
+
+                    if "relatorio_negocio_eda" in payload and isinstance(payload["relatorio_negocio_eda"], str) and payload["relatorio_negocio_eda"].strip():
+                        mlflow.set_tag("relatorio_negocio_eda", "gerado")
+
+
 
                 case TipoEvento.GRIDSEARCH_INICIADO:
                     nome = str(payload.get("nome_modelo", "modelo"))
@@ -209,6 +264,23 @@ class ObservadorMlflow(Observador):
                     if "melhor_score" in payload and isinstance(payload["melhor_score"], (int, float)):
                         tags_conclusao["melhor_rmse_cv"] = f"{float(payload['melhor_score']):,.2f}"
                     mlflow.set_tags(tags_conclusao)
+
+                    # Relatório de negócio dos hiperparâmetros — salvo na run filha antes de encerrá-la
+                    if "relatorio_params_negocio_md" in payload and isinstance(payload["relatorio_params_negocio_md"], str) and payload["relatorio_params_negocio_md"].strip():
+                        mlflow.log_text(
+                            text=payload["relatorio_params_negocio_md"],
+                            artifact_file=f"gridsearch/{nome}_parametros_negocio.md",
+                        )
+                        mlflow.set_tag("relatorio_negocio_params", "gerado")
+
+                    # Equação matemática do modelo candidato — salva diretamente como .txt na run filha
+                    if "equacao_texto" in payload and isinstance(payload["equacao_texto"], str) and payload["equacao_texto"].strip():
+                        eq_txt = payload["equacao_texto"]
+                        self._equacoes_modelos[nome] = eq_txt
+                        mlflow.log_text(eq_txt, "equacao_reta.txt")
+                        mlflow.log_text(eq_txt, "equacao_modelo.txt")
+                        mlflow.log_text(eq_txt, f"gridsearch/{nome}_equacao.txt")
+                        mlflow.set_tag("equacao_modelo", eq_txt[:500])
 
                     # Encerra a run filha do modelo e retorna para a run pai
                     if self._child_run_ativa:
@@ -486,6 +558,180 @@ class ObservadorMlflow(Observador):
                             artifact_file="negocio/cobertura_tolerancia.csv",
                         )
 
+                case TipoEvento.EXPLICABILIDADE_CANDIDATO_GERADA:
+                    self._garantir_run_pai()
+                    nome_mod = str(payload.get("nome_modelo", "modelo"))
+                    tipo_exp_c = str(payload.get("tipo", ""))
+                    pasta = f"explicabilidade_candidatos/{nome_mod}"
+
+                    run_id_mod = self._runs_modelos.get(nome_mod)
+                    client_c: MlflowClient | None = None
+                    if run_id_mod:
+                        try:
+                            client_c = MlflowClient(tracking_uri=self._tracking_uri)
+                        except Exception:
+                            pass
+
+                    # Salva artefatos .txt da equação do modelo candidato
+                    equacao_c = str(payload.get("equacao_texto", ""))
+                    if equacao_c:
+                        self._equacoes_modelos[nome_mod] = equacao_c
+                        # Artefatos .txt na run pai (pasta do modelo e pasta de equações)
+                        mlflow.log_text(equacao_c, f"{pasta}/equacao_reta.txt")
+                        mlflow.log_text(equacao_c, f"{pasta}/equacao_modelo.txt")
+                        mlflow.log_text(equacao_c, f"explicabilidade/equacoes_modelos/{nome_mod}_equacao.txt")
+                        # Tag e artefatos na run filha do modelo para visualização direta
+                        if client_c and run_id_mod:
+                            try:
+                                client_c.log_text(run_id_mod, equacao_c, "equacao_reta.txt")
+                                client_c.log_text(run_id_mod, equacao_c, "equacao_modelo.txt")
+                                client_c.set_tag(run_id_mod, "equacao_modelo", equacao_c[:500])
+                            except Exception:
+                                pass
+
+                    if tipo_exp_c == "coeficientes":
+                        intercepto_c = payload.get("intercepto")
+                        if isinstance(intercepto_c, (int, float)) and client_c and run_id_mod:
+                            try:
+                                client_c.log_metric(run_id_mod, "intercepto", float(intercepto_c))
+                            except Exception:
+                                pass
+
+                        df_coef_c = payload.get("tabela_coeficientes")
+                        if isinstance(df_coef_c, pd.DataFrame) and not df_coef_c.empty:
+                            mlflow.log_table(data=df_coef_c, artifact_file=f"{pasta}/coeficientes.json")
+                            mlflow.log_text(df_coef_c.to_csv(index=False), f"{pasta}/coeficientes.csv")
+                            # Registra coeficientes individuais na run filha
+                            if client_c and run_id_mod:
+                                col_feat_c = next((c for c in df_coef_c.columns if c.lower() in ("feature", "variavel", "coluna")), None)
+                                col_coef_c = next((c for c in df_coef_c.columns if c.lower() in ("coeficiente", "coef", "valor")), None)
+                                if col_feat_c and col_coef_c:
+                                    for _, row_c in df_coef_c.iterrows():
+                                        feat_c = str(row_c[col_feat_c]).replace(" ", "_").replace("/", "_")[:60]
+                                        coef_v = row_c[col_coef_c]
+                                        if isinstance(coef_v, (int, float)):
+                                            try:
+                                                client_c.log_metric(run_id_mod, f"coef_{feat_c}", float(coef_v))
+                                            except Exception:
+                                                pass
+
+                        md_interp_c = payload.get("interpretacao_texto")
+                        if isinstance(md_interp_c, str) and md_interp_c.strip():
+                            mlflow.log_text(md_interp_c, f"{pasta}/interpretacao.md")
+
+                    elif tipo_exp_c == "importancias":
+                        df_imp_c = payload.get("tabela_importancias")
+                        if isinstance(df_imp_c, pd.DataFrame) and not df_imp_c.empty:
+                            mlflow.log_table(data=df_imp_c, artifact_file=f"{pasta}/importancias_permutacao.json")
+                            mlflow.log_text(df_imp_c.to_csv(index=False), f"{pasta}/importancias_permutacao.csv")
+                            col_feat_i = next((c for c in df_imp_c.columns if c.lower() in ("feature", "variavel", "coluna")), None)
+                            col_imp_i = next((c for c in df_imp_c.columns if "import" in c.lower() or "mean" in c.lower()), None)
+                            if col_feat_i and col_imp_i and client_c and run_id_mod:
+                                top10_c = df_imp_c.nlargest(10, col_imp_i) if col_imp_i in df_imp_c.columns else df_imp_c.head(10)
+                                for _, row_i in top10_c.iterrows():
+                                    feat_i = str(row_i[col_feat_i]).replace(" ", "_").replace("/", "_")[:60]
+                                    imp_v = row_i[col_imp_i]
+                                    if isinstance(imp_v, (int, float)):
+                                        try:
+                                            client_c.log_metric(run_id_mod, f"imp_{feat_i}", float(imp_v))
+                                        except Exception:
+                                            pass
+
+                case TipoEvento.EXPLICABILIDADE_GERADA:
+                    self._garantir_run_pai()
+                    tipo_exp = str(payload.get("tipo", ""))
+                    nome_campeao_exp = str(payload.get("nome_campeao", self._nome_campeao or "campeao"))
+                    mlflow.set_tag("explicabilidade_tipo", tipo_exp)
+
+                    # Equação matemática do modelo campeão — salva como artefato .txt na run pai e na run filha
+                    equacao = str(payload.get("equacao_texto", ""))
+                    if equacao:
+                        self._equacoes_modelos[nome_campeao_exp] = equacao
+                        mlflow.set_tag("equacao_modelo", equacao[:500])
+                        mlflow.set_tag("equacao_campeao", equacao[:500])
+                        # Artefatos .txt na run pai
+                        mlflow.log_text(equacao, "explicabilidade/equacao_campeao.txt")
+                        mlflow.log_text(equacao, "explicabilidade/equacao_reta.txt")
+                        mlflow.log_text(equacao, "equacao_campeao.txt")
+                        mlflow.log_text(equacao, "equacao_reta.txt")
+
+                        # Salva também diretamente na run filha do campeão
+                        run_id_campeao = self._runs_modelos.get(nome_campeao_exp)
+                        if run_id_campeao:
+                            try:
+                                client_exp = MlflowClient(tracking_uri=self._tracking_uri)
+                                client_exp.log_text(run_id_campeao, equacao, "equacao_campeao.txt")
+                                client_exp.log_text(run_id_campeao, equacao, "equacao_reta.txt")
+                                client_exp.set_tag(run_id_campeao, "equacao_modelo", equacao[:500])
+                                client_exp.set_tag(run_id_campeao, "status_modelo", "campeao")
+                            except Exception:
+                                pass
+
+                    # Gera o arquivo consolidado com as equações de todos os modelos na run pai
+                    self._salvar_todas_equacoes_modelos(nome_campeao=nome_campeao_exp)
+
+                    if tipo_exp == "coeficientes":
+                        # Intercepto como métrica
+                        intercepto = payload.get("intercepto")
+                        if isinstance(intercepto, (int, float)):
+                            mlflow.log_metric("intercepto", float(intercepto))
+
+                        # Tabela de coeficientes como artefatos
+                        df_coef = payload.get("tabela_coeficientes")
+                        if isinstance(df_coef, pd.DataFrame) and not df_coef.empty:
+                            mlflow.log_table(data=df_coef, artifact_file="explicabilidade/coeficientes.json")
+                            mlflow.log_text(
+                                text=df_coef.to_csv(index=False),
+                                artifact_file="explicabilidade/coeficientes.csv",
+                            )
+                            # Registra cada coeficiente como métrica individual para rastreabilidade
+                            run_id_exp = self._runs_modelos.get(nome_campeao_exp)
+                            if run_id_exp:
+                                try:
+                                    client_exp = MlflowClient(tracking_uri=self._tracking_uri)
+                                    col_feat = next((c for c in df_coef.columns if c.lower() in ("feature", "variavel", "coluna")), None)
+                                    col_coef = next((c for c in df_coef.columns if c.lower() in ("coeficiente", "coef", "valor")), None)
+                                    if col_feat and col_coef:
+                                        for _, row in df_coef.iterrows():
+                                            feat_name = str(row[col_feat]).replace(" ", "_").replace("/", "_")[:60]
+                                            coef_val = row[col_coef]
+                                            if isinstance(coef_val, (int, float)):
+                                                client_exp.log_metric(run_id_exp, f"coef_{feat_name}", float(coef_val))
+                                except Exception:
+                                    pass
+
+                        # Interpretação em Markdown
+                        md_interp = payload.get("interpretacao_texto")
+                        if isinstance(md_interp, str) and md_interp.strip():
+                            mlflow.log_text(text=md_interp, artifact_file="explicabilidade/interpretacao_modelo.md")
+
+                    elif tipo_exp == "importancias":
+                        # Tabela de importâncias por permutação
+                        df_imp = payload.get("tabela_importancias")
+                        if isinstance(df_imp, pd.DataFrame) and not df_imp.empty:
+                            mlflow.log_table(data=df_imp, artifact_file="explicabilidade/importancias_permutacao.json")
+                            mlflow.log_text(
+                                text=df_imp.to_csv(index=False),
+                                artifact_file="explicabilidade/importancias_permutacao.csv",
+                            )
+                            # Registra as 10 features mais importantes como métricas individuais
+                            run_id_exp = self._runs_modelos.get(nome_campeao_exp)
+                            col_feat_i = next((c for c in df_imp.columns if c.lower() in ("feature", "variavel", "coluna")), None)
+                            col_imp_i = next((c for c in df_imp.columns if "import" in c.lower() or "mean" in c.lower()), None)
+                            if col_feat_i and col_imp_i:
+                                top10 = df_imp.nlargest(10, col_imp_i) if col_imp_i in df_imp.columns else df_imp.head(10)
+                                for _, row in top10.iterrows():
+                                    feat_name = str(row[col_feat_i]).replace(" ", "_").replace("/", "_")[:60]
+                                    imp_val = row[col_imp_i]
+                                    if isinstance(imp_val, (int, float)):
+                                        mlflow.log_metric(f"imp_{feat_name}", float(imp_val))
+                                        if run_id_exp:
+                                            try:
+                                                client_exp2 = MlflowClient(tracking_uri=self._tracking_uri)
+                                                client_exp2.log_metric(run_id_exp, f"imp_{feat_name}", float(imp_val))
+                                            except Exception:
+                                                pass
+
                 case TipoEvento.DRIFT_DETECTADO:
                     self._garantir_run_pai(nome_padrao="monitoramento_drift")
                     tags_drift: dict[str, str] = {
@@ -504,9 +750,36 @@ class ObservadorMlflow(Observador):
                     if "figura_curva" in payload and isinstance(payload["figura_curva"], Figure):
                         mlflow.log_figure(payload["figura_curva"], "validacao/curva_aprendizado.png")
                     if "tabela_curva" in payload and isinstance(payload["tabela_curva"], pd.DataFrame):
-                        mlflow.log_table(payload["tabela_curva"], "validacao/curva_aprendizado.json")
+                        df_curva_log = payload["tabela_curva"]
+                        mlflow.log_table(df_curva_log, "validacao/curva_aprendizado.json")
+                        mlflow.log_text(df_curva_log.to_csv(index=False), "validacao/curva_aprendizado.csv")
                     if "diagnostico" in payload and isinstance(payload["diagnostico"], dict):
-                        mlflow.log_dict(payload["diagnostico"], "validacao/diagnostico_aprendizado.json")
+                        diag = payload["diagnostico"]
+                        mlflow.log_dict(diag, "validacao/diagnostico_aprendizado.json")
+
+                        # Tag de diagnóstico visível direto na UI do MLflow
+                        texto_diag = str(diag.get("diagnostico", ""))
+                        if "overfitting" in texto_diag.lower():
+                            tag_diag = "overfitting"
+                        elif "underfitting" in texto_diag.lower():
+                            tag_diag = "underfitting"
+                        else:
+                            tag_diag = "ok"
+                        mlflow.set_tag("diagnostico_aprendizado", tag_diag)
+                        mlflow.set_tag("diagnostico_aprendizado_descricao", texto_diag[:250])
+
+                        # Métricas individuais para comparação entre modelos/runs
+                        if "rmse_treino_final" in diag and isinstance(diag["rmse_treino_final"], (int, float)):
+                            mlflow.log_metric("rmse_treino_curva", float(diag["rmse_treino_final"]))
+                        if "rmse_validacao_final" in diag and isinstance(diag["rmse_validacao_final"], (int, float)):
+                            mlflow.log_metric("rmse_validacao_curva", float(diag["rmse_validacao_final"]))
+                        if "gap_final_rmse" in diag and isinstance(diag["gap_final_rmse"], (int, float)):
+                            mlflow.log_metric("gap_overfitting", float(diag["gap_final_rmse"]))
+                            # Razão gap/validação como indicador de severidade (0 a 1+)
+                            rmse_val = diag.get("rmse_validacao_final")
+                            if isinstance(rmse_val, (int, float)) and float(rmse_val) > 0:
+                                razao_gap = float(diag["gap_final_rmse"]) / float(rmse_val)
+                                mlflow.log_metric("razao_gap_overfitting", razao_gap)
 
         except Exception:
             # Em caso de indisponibilidade transitória do MLflow em testes, não interrompe o fluxo

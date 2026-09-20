@@ -360,5 +360,87 @@ def test_observador_mlflow_inclui_todos_resultados_de_negocio(monkeypatch) -> No
     assert "negocio/grafico_cobertura_tolerancia.png" in figuras_logadas
 
 
+def test_observador_mlflow_salva_equacao_txt_candidato_e_campeao(monkeypatch) -> None:
+    import mlflow
+    from mlflow.tracking import MlflowClient
+    from imobiliaria_ml.mlflow_pkg.observador_mlflow import ObservadorMlflow
+
+    textos_logados_mlflow: list[tuple[str, str]] = []
+    textos_logados_client: list[tuple[str, str, str]] = []
+
+    class MockRunInfo:
+        def __init__(self, run_id: str) -> None:
+            self.run_id = run_id
+
+    class MockRun:
+        def __init__(self, run_id: str) -> None:
+            self.info = MockRunInfo(run_id)
+
+    class MockClient:
+        def __init__(self, tracking_uri=None) -> None:
+            pass
+
+        def log_text(self, run_id: str, text: str, artifact_file: str) -> None:
+            textos_logados_client.append((run_id, text, artifact_file))
+
+        def set_tag(self, run_id: str, key: str, value: str) -> None:
+            pass
+
+        def log_metric(self, run_id: str, key: str, value: float) -> None:
+            pass
+
+    monkeypatch.setattr(ObservadorMlflow, "_configurar_mlflow", lambda self: None)
+    monkeypatch.setattr(mlflow, "start_run", lambda run_name=None, nested=False: MockRun("rid_teste"))
+    monkeypatch.setattr(mlflow, "end_run", lambda: None)
+    monkeypatch.setattr(mlflow, "active_run", lambda: MockRun("rid_pai"))
+    monkeypatch.setattr(mlflow, "log_text", lambda text, artifact_file: textos_logados_mlflow.append((artifact_file, text)))
+    monkeypatch.setattr(mlflow, "set_tag", lambda k, v: None)
+    monkeypatch.setattr(mlflow, "set_tags", lambda t: None)
+    monkeypatch.setattr(mlflow, "log_param", lambda k, v: None)
+    monkeypatch.setattr(mlflow, "log_metric", lambda k, v: None)
+    monkeypatch.setattr(mlflow, "log_dict", lambda **kwargs: None)
+    monkeypatch.setattr(mlflow, "log_table", lambda **kwargs: None)
+    monkeypatch.setattr("imobiliaria_ml.mlflow_pkg.observador_mlflow.MlflowClient", MockClient)
+
+    obs = ObservadorMlflow(tracking_uri="http://mock-uri:5000")
+
+    # 1. GridSearch de um candidato com equação no payload
+    obs.atualizar(TipoEvento.GRIDSEARCH_INICIADO, CargaEvento(valores={"nome_modelo": "ridge"}))
+    obs.atualizar(
+        TipoEvento.GRIDSEARCH_FINALIZADO,
+        CargaEvento(
+            valores={
+                "nome_modelo": "ridge",
+                "melhores_parametros": {"alpha": 1.0},
+                "melhor_score": 250000.0,
+                "equacao_texto": "Valor_da_Venda = 1000 + (50 * Metragem)",
+            }
+        ),
+    )
+
+    arquivos_txt_mlflow = [t[0] for t in textos_logados_mlflow]
+    assert "equacao_reta.txt" in arquivos_txt_mlflow
+    assert "equacao_modelo.txt" in arquivos_txt_mlflow
+    assert "gridsearch/ridge_equacao.txt" in arquivos_txt_mlflow
+
+    # 2. Explicabilidade do Campeão
+    obs.atualizar(
+        TipoEvento.EXPLICABILIDADE_GERADA,
+        CargaEvento(
+            valores={
+                "nome_campeao": "ridge",
+                "tipo": "coeficientes",
+                "equacao_texto": "Valor_da_Venda = 1000 + (50 * Metragem)",
+            }
+        ),
+    )
+
+    arquivos_txt_campeao = [t[0] for t in textos_logados_mlflow]
+    assert "explicabilidade/equacao_campeao.txt" in arquivos_txt_campeao
+    assert "explicabilidade/equacao_reta.txt" in arquivos_txt_campeao
+    assert "explicabilidade/todas_equacoes_modelos.txt" in arquivos_txt_campeao
+
+
+
 
 

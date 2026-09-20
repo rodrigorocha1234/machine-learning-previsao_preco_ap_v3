@@ -5,6 +5,7 @@ import pandas as pd
 from .analisador_descritivo import AnalisadorDescritivo
 from .analisador_distribuicao import AnalisadorDistribuicao
 from .estatisticas_descritivas import EstatisticasDescritivas
+from .interpretador_eda import InterpretadorEda
 
 
 class GeradorRelatorioEda:
@@ -13,6 +14,7 @@ class GeradorRelatorioEda:
     def __init__(self) -> None:
         self._descritivo = AnalisadorDescritivo()
         self._distribuicao = AnalisadorDistribuicao()
+        self._interpretador = InterpretadorEda()
 
     def gerar_relatorio_completo(
         self,
@@ -53,11 +55,44 @@ class GeradorRelatorioEda:
         vif_dict = self._distribuicao.calcular_vif(dados, features_num)
         outliers_dict = self._distribuicao.diagnosticar_outliers_iqr(dados, colunas_numericas)
 
+        # Análise e interpretação aprofundada por Zona
+        df_zonas = pd.DataFrame()
+        diag_zonas: dict[str, str] = {}
+        resumo_zonas_md = ""
+        relatorio_negocio_md = ""
+        analise_zona_dict: dict[str, dict[str, float | int | str]] = {}
+
+        if "Zona" in dados.columns and coluna_alvo in dados.columns:
+            df_zonas = self._interpretador.analisar_estatisticas_por_zona(
+                dados=dados,
+                coluna_zona="Zona",
+                coluna_alvo=coluna_alvo,
+                coluna_metragem="Metragem",
+            )
+            diag_zonas = self._interpretador.gerar_diagnostico_zonas(df_zonas)
+            resumo_zonas_md = self._interpretador.gerar_resumo_textual(df_zonas, diag_zonas)
+            relatorio_negocio_md = self._interpretador.gerar_relatorio_negocio(
+                tabela_zonas=df_zonas,
+                diagnostico=diag_zonas,
+                stats_numericas=stats_num,
+                outliers_iqr=outliers_dict,
+                coluna_alvo=coluna_alvo,
+            )
+            if not df_zonas.empty and "zona" in df_zonas.columns:
+                for _, r in df_zonas.iterrows():
+                    z_nome = str(r["zona"])
+                    analise_zona_dict[z_nome] = {k: v for k, v in r.items() if k != "zona"}
+
         estatisticas = EstatisticasDescritivas(
             tabela_numerica=stats_num,
             tabela_categorica=stats_cat,
             tabela_vif=vif_dict,
             outliers_iqr=outliers_dict,
+            analise_zona=analise_zona_dict,
+            diagnostico_zona=diag_zonas,
+            tabela_zonas_df=df_zonas,
+            resumo_zonas_md=resumo_zonas_md,
+            relatorio_negocio_md=relatorio_negocio_md,
         )
 
         df_descritivo = pd.DataFrame(stats_num).T
@@ -82,6 +117,13 @@ class GeradorRelatorioEda:
         if "Zona" in dados.columns and coluna_alvo in dados.columns:
             figuras["boxplot_zona_valor"] = self._distribuicao.gerar_figura_boxplot_zona(
                 dados, "Zona", coluna_alvo
+            )
+            if "Metragem" in dados.columns:
+                figuras["boxplot_zona_m2"] = self._distribuicao.gerar_figura_boxplot_zona_m2(
+                    dados, "Zona", coluna_alvo, "Metragem"
+                )
+            figuras["perfil_imobiliario_zona"] = self._distribuicao.gerar_figura_perfil_zonas(
+                dados, "Zona", coluna_alvo, "Metragem" if "Metragem" in dados.columns else ""
             )
 
         return estatisticas, df_descritivo, df_categorias, figuras

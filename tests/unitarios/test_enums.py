@@ -41,7 +41,9 @@ def test_tipo_evento_valores() -> None:
     assert TipoEvento.MODELO_CAMPEAO == "modelo_campeao"
     assert TipoEvento.FRIEDMAN_FINALIZADO == "friedman_finalizado"
     assert TipoEvento.NEMENYI_FINALIZADO == "nemenyi_finalizado"
-    assert len(TipoEvento) == 11
+    assert TipoEvento.EXPLICABILIDADE_GERADA == "explicabilidade_gerada"
+    assert TipoEvento.EXPLICABILIDADE_CANDIDATO_GERADA == "explicabilidade_candidato_gerada"
+    assert len(TipoEvento) == 13
 
 
 def test_nivel_drift_valores() -> None:

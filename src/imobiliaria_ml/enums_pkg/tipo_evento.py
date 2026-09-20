@@ -17,3 +17,5 @@ class TipoEvento(StrEnum):
     METRICAS_NEGOCIO_FINALIZADAS = "metricas_negocio_finalizadas"
     DRIFT_DETECTADO = "drift_detectado"
     CURVA_APRENDIZADO_GERADA = "curva_aprendizado_gerada"
+    EXPLICABILIDADE_GERADA = "explicabilidade_gerada"
+    EXPLICABILIDADE_CANDIDATO_GERADA = "explicabilidade_candidato_gerada"

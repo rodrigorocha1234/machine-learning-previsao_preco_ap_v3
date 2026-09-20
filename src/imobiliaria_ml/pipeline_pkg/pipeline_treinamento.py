@@ -42,6 +42,7 @@ from ..preprocessamento_pkg.tratador_categorico import TratadorCategorico
 from ..qualidade_pkg.validador_esquema import ValidadorEsquema
 from ..qualidade_pkg.validador_qualidade import ValidadorQualidade
 from ..selecao_pkg.seletor_hiperparametros import SeletorHiperparametros
+from ..selecao_pkg.explicador_hiperparametros import ExplicadorHiperparametros
 from ..validacao_pkg.analisador_aprendizado import AnalisadorAprendizado
 from ..validacao_pkg.calculador_metricas import CalculadorMetricas
 from ..validacao_pkg.grupo_elegivel import GrupoElegivel
@@ -82,6 +83,7 @@ class PipelineTreinamento(SujeitoObservavel):
         self._seletor_hiperparametros = SeletorHiperparametros(
             cv_splits=self._config.n_splits
         )
+        self._explicador_hiper = ExplicadorHiperparametros()
         self._validador_cv = ValidadorRepeatedKFold(
             n_splits=self._config.n_splits,
             n_repeats=self._config.n_repeats,
@@ -161,7 +163,19 @@ class PipelineTreinamento(SujeitoObservavel):
             "correlacao_spearman": figuras.get("correlacao_spearman"),
             "distribuicao_alvo": figuras.get("distribuicao_alvo"),
             "boxplot_zona_valor": figuras.get("boxplot_zona_valor"),
+            "boxplot_zona_m2": figuras.get("boxplot_zona_m2"),
+            "perfil_imobiliario_zona": figuras.get("perfil_imobiliario_zona"),
+            "tabela_zonas": estatisticas.tabela_zonas_df,
+            "diagnostico_zonas": estatisticas.diagnostico_zona,
+            "interpretacao_zonas": estatisticas.resumo_zonas_md,
+            "relatorio_negocio_eda": estatisticas.relatorio_negocio_md,
         }
+        if estatisticas.diagnostico_zona:
+            logger.info("   * Zona Mais Valorizada: %s", estatisticas.diagnostico_zona.get("zona_mais_valorizada", ""))
+            logger.info("   * Zona Mais Acessível: %s", estatisticas.diagnostico_zona.get("zona_mais_acessivel", ""))
+            logger.info("   * Gradiente Espacial: %s", estatisticas.diagnostico_zona.get("fator_gradiente_espacial", ""))
+            logger.info("   * Maior Volume Amostral: %s", estatisticas.diagnostico_zona.get("zona_maior_liquidez", ""))
+
         self.notificar(TipoEvento.EDA_FINALIZADA, CargaEvento(valores=payload))
 
     def separar_holdout(
@@ -248,6 +262,23 @@ class PipelineTreinamento(SujeitoObservavel):
 
             logger.info("   -> [%s] Concluído | Melhor RMSE (CV): R$ %s | Melhores parâmetros: %s", tipo.value, f"{res_grid.melhor_score_rmse:,.2f}", res_grid.melhores_parametros)
 
+            # Gera relatório de negócio dos parâmetros selecionados
+            _, relatorio_params_md = self._explicador_hiper.gerar_relatorio_negocio(
+                nome_modelo=tipo.value,
+                melhores_parametros=res_grid.melhores_parametros,
+            )
+
+            pipeline_otimizada = clone(pipeline_base)
+            pipeline_otimizada.set_params(**res_grid.melhores_parametros)
+            pipeline_otimizada.fit(X_dev, y_dev)
+            pipelines_otimizadas[tipo.value] = pipeline_otimizada
+
+            # Extrai equação analítica/matemática do modelo candidato otimizado
+            equacao_candidato_txt = self._extrator_coef.gerar_equacao_txt(
+                pipeline_ajustada=pipeline_otimizada,
+                nome_modelo=tipo.value,
+            )
+
             self.notificar(
                 TipoEvento.GRIDSEARCH_FINALIZADO,
                 CargaEvento(
@@ -256,13 +287,11 @@ class PipelineTreinamento(SujeitoObservavel):
                         "melhores_parametros": res_grid.melhores_parametros,
                         "melhor_score": res_grid.melhor_score_rmse,
                         "tabela_cv_results": res_grid.tabela_cv_results,
+                        "relatorio_params_negocio_md": relatorio_params_md,
+                        "equacao_texto": equacao_candidato_txt,
                     }
                 ),
             )
-
-            pipeline_otimizada = clone(pipeline_base)
-            pipeline_otimizada.set_params(**res_grid.melhores_parametros)
-            pipelines_otimizadas[tipo.value] = pipeline_otimizada
 
             candidatos_modelos[tipo.value] = CandidatoModelo(
                 tipo_modelo=tipo,
@@ -273,6 +302,79 @@ class PipelineTreinamento(SujeitoObservavel):
             )
 
         return pipelines_otimizadas, candidatos_modelos
+
+    def extrair_explicabilidade_candidatos(
+        self,
+        pipelines_otimizadas: dict[str, Pipeline],
+        X_dev: pd.DataFrame,
+        y_dev: pd.Series,
+    ) -> None:
+        """Treina cada pipeline candidata (clone) em 100% do dev e extrai equação ou importâncias."""
+        logger.info(" -> Extraindo explicabilidade de %d modelos candidatos com melhores parâmetros...", len(pipelines_otimizadas))
+        for nome, pipeline_base in pipelines_otimizadas.items():
+            try:
+                pipeline_ajustada = clone(pipeline_base)
+                pipeline_ajustada.fit(X_dev, y_dev)
+                estimador = pipeline_ajustada.named_steps.get("modelo")
+
+                payload_exp: dict[
+                    str,
+                    str
+                    | int
+                    | float
+                    | bool
+                    | pd.DataFrame
+                    | dict[str, float | int | str | bool | None]
+                    | list[str]
+                    | None,
+                ] = {"nome_modelo": nome}
+
+                # Desce para dentro de pipelines aninhadas (ex: Regressão Polinomial)
+                if isinstance(estimador, Pipeline):
+                    estimador_final_check = estimador.named_steps.get("linear") or estimador.steps[-1][1]
+                else:
+                    estimador_final_check = estimador
+
+                equacao_candidato_txt = self._extrator_coef.gerar_equacao_txt(
+                    pipeline_ajustada=pipeline_ajustada,
+                    nome_modelo=nome,
+                )
+
+                if hasattr(estimador_final_check, "coef_"):
+                    df_coef, intercepto, equacao = self._extrator_coef.extrair(pipeline_ajustada)
+                    md_interp = self._interpretador.gerar_interpretacao_markdown(df_coef, intercepto)
+                    payload_exp.update(
+                        {
+                            "tipo": "coeficientes",
+                            "equacao_texto": equacao_candidato_txt,
+                            "equacao_linha": equacao,
+                            "intercepto": intercepto,
+                            "tabela_coeficientes": df_coef,
+                            "interpretacao_texto": md_interp,
+                        }
+                    )
+                    logger.info("   -> [%s] Equação matemática extraída.", nome)
+                else:
+                    df_imp = self._explicador_imp.calcular_importancias(
+                        pipeline_ajustada=pipeline_ajustada,
+                        X_val=X_dev,
+                        y_val=y_dev,
+                    )
+                    payload_exp.update(
+                        {
+                            "tipo": "importancias",
+                            "equacao_texto": equacao_candidato_txt,
+                            "tabela_importancias": df_imp,
+                        }
+                    )
+                    logger.info("   -> [%s] Importâncias (%d features) e formulação analítica extraídas.", nome, len(df_imp))
+
+                self.notificar(
+                    TipoEvento.EXPLICABILIDADE_CANDIDATO_GERADA,
+                    CargaEvento(valores=payload_exp),
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("   -> [%s] Falha ao extrair explicabilidade: %s", nome, exc)
 
     def validar_repeated_kfold(
         self,
@@ -531,17 +633,41 @@ class PipelineTreinamento(SujeitoObservavel):
         logger.info(" -> Extraindo explicabilidade e importância das variáveis do campeão...")
         resultado_explicabilidade: ResultadoExplicabilidade | None = None
         estimador_interno = pipeline_campea.named_steps.get("modelo")
-        if hasattr(estimador_interno, "coef_"):
+        # Desce para dentro de pipelines aninhadas (ex: Regressão Polinomial)
+        if isinstance(estimador_interno, Pipeline):
+            estimador_final_check = estimador_interno.named_steps.get("linear") or estimador_interno.steps[-1][1]
+        else:
+            estimador_final_check = estimador_interno
+        equacao_campeao_txt = self._extrator_coef.gerar_equacao_txt(
+            pipeline_ajustada=pipeline_campea,
+            nome_modelo=nome_campeao,
+        )
+
+        if hasattr(estimador_final_check, "coef_"):
             df_coef, intercepto, equacao = self._extrator_coef.extrair(pipeline_campea)
             md_interp = self._interpretador.gerar_interpretacao_markdown(df_coef, intercepto)
             resultado_explicabilidade = ResultadoExplicabilidade(
                 tipo_modelo=nome_campeao,
                 intercepto=intercepto,
                 tabela_coeficientes=df_coef,
-                equacao_texto=equacao,
+                equacao_texto=equacao_campeao_txt,
                 interpretacao_texto=md_interp,
             )
-            logger.info(" -> Equação matemática extraída: %s", equacao)
+            logger.info(" -> Equação matemática do campeão extraída com sucesso.")
+            self.notificar(
+                TipoEvento.EXPLICABILIDADE_GERADA,
+                CargaEvento(
+                    valores={
+                        "nome_campeao": nome_campeao,
+                        "tipo": "coeficientes",
+                        "equacao_texto": equacao_campeao_txt,
+                        "equacao_linha": equacao,
+                        "intercepto": intercepto,
+                        "tabela_coeficientes": df_coef,
+                        "interpretacao_texto": md_interp,
+                    }
+                ),
+            )
         else:
             df_imp = self._explicador_imp.calcular_importancias(
                 pipeline_ajustada=pipeline_campea,
@@ -550,9 +676,21 @@ class PipelineTreinamento(SujeitoObservavel):
             )
             resultado_explicabilidade = ResultadoExplicabilidade(
                 tipo_modelo=nome_campeao,
+                equacao_texto=equacao_campeao_txt,
                 tabela_importancias=df_imp,
             )
-            logger.info(" -> Importâncias por permutação calculadas para %d features.", len(df_imp))
+            logger.info(" -> Importâncias e formulação matemática do campeão extraídas com sucesso.")
+            self.notificar(
+                TipoEvento.EXPLICABILIDADE_GERADA,
+                CargaEvento(
+                    valores={
+                        "nome_campeao": nome_campeao,
+                        "tipo": "importancias",
+                        "equacao_texto": equacao_campeao_txt,
+                        "tabela_importancias": df_imp,
+                    }
+                ),
+            )
         return resultado_explicabilidade
 
     def calcular_metricas_negocio(
@@ -672,6 +810,10 @@ class PipelineTreinamento(SujeitoObservavel):
 
         # 6. GridSearchCV
         pipelines_otimizadas, _ = self.executar_grid_search(tipos_candidatos, X_dev, y_dev)
+
+        # 6.1 Extração de equações / importâncias por modelo com melhores parâmetros
+        logger.info("[Passo 6.1/%d] Extraindo equação/importâncias de cada modelo candidato (melhores parâmetros + treino em 100%% do dev)...", self._config.total_passos)
+        self.extrair_explicabilidade_candidatos(pipelines_otimizadas, X_dev, y_dev)
 
         # 7. RepeatedKFold (30 repetições) com mesmas partições
         res_cv = self.validar_repeated_kfold(pipelines_otimizadas, X_dev, y_dev)
