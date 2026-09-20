@@ -3,6 +3,10 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.idea
+.minio-data
+*.db
+*-journal
 # C extensions
 *.so
 
@@ -54,6 +58,11 @@ cover/
 # Translations
 *.mo
 *.pot
+
+# MLflow & CatBoost
+catboost_info/
+mlflow.db
+mlruns/
 
 # Django stuff:
 *.log
@@ -216,3 +225,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+minio-data/*
