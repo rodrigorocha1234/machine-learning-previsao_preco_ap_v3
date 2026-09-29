@@ -1,0 +1,10 @@
+.mypy_cache
+.ruf_cache
+.env
+.venv
+grafana_data/
+prometheus_data/
+pgdata/
+storage-data/
+__pycache__/
+.env
