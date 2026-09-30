@@ -36,6 +36,7 @@ services:
       RUSTFS_ACCESS_KEY: ${AWS_ACCESS_KEY_ID:-s3admin}
       RUSTFS_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY:-s3admin}
       RUSTFS_CONSOLE_ENABLE: ${RUSTFS_CONSOLE_ENABLE:-true}
+      TZ: America/Sao_Paulo
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -78,6 +79,7 @@ services:
       AWS_S3_ADDRESSING_STYLE: path
       MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
       S3_BUCKET: ${S3_BUCKET}
+      TZ: America/Sao_Paulo
     restart: "no"
     networks:
       mlflow-network:
@@ -152,6 +154,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-Admin@2026}
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - TZ=America/Sao_Paulo
       - GF_DATE_FORMATS_DEFAULT_TIMEZONE=America/Sao_Paulo
       - GF_DATE_FORMATS_TIME_ZONE=America/Sao_Paulo
@@ -170,6 +174,8 @@ services:
     image: grafana/loki:latest
     container_name: loki
     hostname: loki
+    environment:
+      TZ: America/Sao_Paulo
     profiles:
       - dashboard
     ports:
@@ -186,6 +192,8 @@ services:
     image: grafana/alloy:latest
     container_name: alloy
     hostname: alloy
+    environment:
+      TZ: America/Sao_Paulo
     profiles:
       - dashboard
     ports:
@@ -204,6 +212,8 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     hostname: prometheus
+    environment:
+      TZ: America/Sao_Paulo
     profiles:
       - dashboard
     ports:
@@ -239,9 +249,11 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
       MLFLOW_S3_IGNORE_TLS: "true"
-      PYTHONPATH: /app/src
+      PYTHONPATH: /app:/app/src
       TZ: America/Sao_Paulo
     volumes:
+      - ./app_build:/app/app_build:ro
+      - ./configuracoes:/app/configuracoes:ro
       - ./src:/app/src:ro
     command:
       - /bin/bash
@@ -249,8 +261,8 @@ services:
       - |
         apt-get update && apt-get install -y --no-install-recommends libgomp1
         pip install --no-cache-dir boto3 scikit-learn lightgbm xgboost psycopg2-binary scipy pandas cloudpickle typing_extensions
-        python -c "import site, pathlib; p = pathlib.Path(site.getsitepackages()[0]) / 'app_src.pth'; p.write_text('/app/src\nimport typing, typing_extensions; setattr(typing, \"override\", getattr(typing_extensions, \"override\", lambda f: f))\n')"
-        export PYTHONPATH=/app/src:$${PYTHONPATH}
+        python -c "import site, pathlib; p = pathlib.Path(site.getsitepackages()[0]) / 'app_src.pth'; p.write_text('/app\n/app/src\nimport typing, typing_extensions; setattr(typing, \"override\", getattr(typing_extensions, \"override\", lambda f: f))\n')"
+        export PYTHONPATH=/app:/app/src:$${PYTHONPATH}
         mlflow models serve \
           -m "models:/previsao_preco_apartamento_modelo@champion" \
           --host 0.0.0.0 \

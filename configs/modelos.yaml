@@ -1,0 +1,136 @@
+modelos:
+  linear_regression:
+    ativo: false
+    parametros:
+      fit_intercept: true
+    tuning:
+      estrategia: nenhum
+      parametros: {}
+
+  ridge:
+    ativo: true
+    parametros:
+      random_state: 42
+    tuning:
+      estrategia: grid
+      scoring: neg_root_mean_squared_error
+      parametros:
+        modelo__alpha: [0.1]
+        modelo__solver: [auto, cholesky]
+
+  lasso:
+    ativo: false
+    parametros:
+      max_iter: 100
+      random_state: 42
+    tuning:
+      estrategia: grid
+      scoring: neg_root_mean_squared_error
+      parametros:
+        modelo__alpha: [0.01]
+        modelo__selection: [cyclic, random]
+
+  elastic_net:
+    ativo: false
+    parametros:
+      max_iter: 100
+      random_state: 42
+    tuning:
+      estrategia: grid
+      scoring: neg_root_mean_squared_error
+      parametros:
+        modelo__alpha: [0.01]
+        modelo__l1_ratio: [0.2]
+
+  arvore_decisao:
+    ativo: true
+    parametros:
+      random_state: 42
+    tuning:
+      estrategia: grid
+      scoring: neg_root_mean_squared_error
+      parametros:
+        modelo__max_depth: [3]
+        modelo__min_samples_split: [2]
+        modelo__min_samples_leaf: [1]
+
+  random_forest:
+    ativo: true
+    parametros:
+      random_state: 42
+      n_jobs: 3
+    tuning:
+      estrategia: random
+      n_iter: 2
+      scoring: neg_root_mean_squared_error
+      random_state: 42
+      parametros:
+        modelo__n_estimators: [100]
+        modelo__max_depth: [3, 5]
+        modelo__min_samples_split: [2]
+        modelo__min_samples_leaf: [1]
+        modelo__max_features: [sqrt]
+
+  svr:
+    ativo: false
+    parametros: {}
+    tuning:
+      estrategia: random
+      n_iter: 5
+      scoring: neg_root_mean_squared_error
+      random_state: 42
+      parametros:
+        modelo__C: [1.0]
+        modelo__epsilon: [0.05]
+        modelo__gamma: [scale]
+        modelo__kernel: [rbf]
+
+  rede_neural:
+    ativo: false
+    parametros:
+      max_iter: 5
+      random_state: 42
+    tuning:
+      estrategia: random
+      n_iter: 8
+      scoring: neg_root_mean_squared_error
+      random_state: 42
+      parametros:
+        modelo__hidden_layer_sizes: [[64]]
+        modelo__activation: [relu]
+        modelo__alpha: [0.001]
+        modelo__learning_rate: [constant]
+
+  xgboost:
+    ativo: false
+    parametros:
+      random_state: 42
+      n_jobs: 3
+    tuning:
+      estrategia: random
+      n_iter: 5
+      scoring: neg_root_mean_squared_error
+      random_state: 42
+      parametros:
+        modelo__n_estimators: [100]
+        modelo__max_depth: [3]
+        modelo__learning_rate: [0.03]
+        modelo__subsample: [0.8]
+        modelo__colsample_bytree: [0.8]
+
+  lightgbm:
+    ativo: false
+    parametros:
+      random_state: 42
+      n_jobs: 3
+    tuning:
+      estrategia: random
+      n_iter: 2
+      scoring: neg_root_mean_squared_error
+      random_state: 42
+      parametros:
+        modelo__n_estimators: [100]
+        modelo__num_leaves: [15]
+        modelo__learning_rate: [0.03]
+        modelo__max_depth: [3]
+        modelo__subsample: [0.8]

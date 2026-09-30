@@ -1,6 +1,6 @@
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 5s
+  evaluation_interval: 5s
 
 scrape_configs:
   - job_name: "prometheus"
@@ -14,3 +14,8 @@ scrape_configs:
   - job_name: "loki"
     static_configs:
       - targets: ["loki:3100"]
+
+  - job_name: "ml_service"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["172.20.0.1:8000"]

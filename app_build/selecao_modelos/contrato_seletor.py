@@ -1,0 +1,23 @@
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
+
+from app_build.estatistica_modelos.contrato_estatistica import ResultadoFriedman
+from app_build.validacao_cruzada.contrato_validador import ResultadoNestedCv
+
+
+@dataclass(frozen=True)
+class DecisaoSelecao:
+    modelo_principal: str
+    modelos_selecionados: tuple[str, ...]
+    modo_selecao: str
+    justificativa: str
+
+
+@runtime_checkable
+class ContratoSeletor(Protocol):
+    def selecionar(
+        self,
+        resultados_cv: Mapping[str, ResultadoNestedCv],
+        resultado_friedman: ResultadoFriedman,
+    ) -> DecisaoSelecao: ...

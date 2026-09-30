@@ -12,10 +12,24 @@ discovery.relabel "docker_labels" {
   }
 }
 
+loki.process "extract_level" {
+  forward_to = [loki.write.local_loki.receiver]
+
+  stage.regex {
+    expression = "(?i)(?P<level>DEBUG|INFO|WARN(?:ING)?|ERR(?:OR)?|CRIT(?:ICAL)?|FATAL|TRACE|NOTICE)"
+  }
+
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+}
+
 loki.source.docker "docker_logs" {
   host          = "unix:///var/run/docker.sock"
   targets       = discovery.docker.containers.targets
-  forward_to    = [loki.write.local_loki.receiver]
+  forward_to    = [loki.process.extract_level.receiver]
   relabel_rules = discovery.relabel.docker_labels.rules
 }
 

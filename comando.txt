@@ -1,0 +1,1 @@
+/startcycle Implementar o projeto de previsão de preços de apartamentos de Ribeirão Preto/SP conforme specs, rules e configs deste workspace.

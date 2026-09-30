@@ -1,0 +1,37 @@
+dados:
+  target: Valor_da_Venda
+  grupos: [Zona, Bairro]
+  holdout:
+    proporcao: 0.20
+    random_state: 42
+
+validacao_cruzada:
+  externa:
+    estrategia: repeated_kfold
+    splits: 5
+    repeticoes: 3
+    random_state: 42
+  interna:
+    estrategia: kfold
+    splits: 5
+    embaralhar: true
+    random_state: 42
+
+avaliacao:
+  metrica_principal: rmse
+  metricas: [rmse, mae, mse, r2, rmse_relativo, mape]
+
+selecao_modelos:
+  votacao: true
+  quantidade_modelos: 3
+  criterio_modelo_unico: ranking_estatistico
+
+mlflow:
+  registrar_tuning: true
+  registrar_parametros: true
+  registrar_interpretacao_negocio: true
+  registrar_artefatos: true
+
+amostra:
+  minima_zona: 30
+  minima_bairro: 20
