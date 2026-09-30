@@ -250,6 +250,8 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
 
     monkeypatch.setenv("MLFLOW_ALLOW_FILE_STORE", "true")
     df_com_indesejados = pd.DataFrame({
+        "Código": [101, 102],
+        "Apartamento": ["Ap 1", "Ap 2"],
         "Metragem": [60.0, 80.0],
         "Quartos": [2, 3],
         "valor_m2": [5000.0, 6000.0],
@@ -293,7 +295,8 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
     nomes_inputs = [campo["name"] for campo in inputs_meta]
     nomes_outputs = [campo["name"] for campo in outputs_meta]
 
-    # Validar que os 3 parâmetros indesejados foram removidos do INPUT
+    assert "Código" not in nomes_inputs
+    assert "Apartamento" not in nomes_inputs
     assert "valor_m2" not in nomes_inputs
     assert "media_valor_m2_bairro" not in nomes_inputs
     assert "media_valor_m2_zona" not in nomes_inputs

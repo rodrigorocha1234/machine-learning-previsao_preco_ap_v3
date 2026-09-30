@@ -15,7 +15,7 @@ Este documento detalha o contrato de integração com a API de Serving do **MLfl
 
 ## 2. Contrato de Entrada (Input Payload)
 
-Os parâmetros de entrada foram estritamente limpos. **Não é necessário e nem permitido** fornecer `valor_m2`, `media_valor_m2_bairro` ou `media_valor_m2_zona`, pois o próprio modelo e o motor de regras de negócio calculam essas métricas dinamicamente.
+Os parâmetros de entrada foram estritamente limpos. **Não é necessário e nem permitido** fornecer `Código`, `Apartamento`, `valor_m2`, `media_valor_m2_bairro` ou `media_valor_m2_zona`. Identificadores do imóvel e métricas derivadas não entram na inferência; o modelo e o motor de regras calculam as métricas dinamicamente.
 
 ### Campos Obrigatórios
 
