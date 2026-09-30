@@ -75,6 +75,8 @@ class Etapa03CarregarDados(ContratoEtapa):
             "dados/bairro_final_v3_engineered.xlsx"
         )
         colunas_indesejadas: tuple[str, ...] = (
+            "Código",
+            "Apartamento",
             "valor_m2",
             "media_valor_m2_bairro",
             "media_valor_m2_zona",
@@ -98,6 +100,52 @@ class Etapa04ValidarDados(ContratoEtapa):
         assert contexto.configuracao_geral is not None, "Configuracao ausente"
         validador = ValidadorContrato(contexto.configuracao_geral.dados.target)
         validador.validar(contexto.dados_brutos)
+
+        # ── Qualidade dos dados → Prometheus ──────────────────────────────────
+        if contexto.coletor is not None:
+            import numpy as np
+            df = contexto.dados_brutos
+            target = contexto.configuracao_geral.dados.target
+            colunas_num = df.select_dtypes(include="number").columns.tolist()
+
+            # Missing por coluna
+            missing = {
+                col: float(df[col].isna().mean() * 100)
+                for col in df.columns
+                if df[col].isna().any()
+            }
+
+            # Outliers por coluna numérica (método IQR)
+            outliers: dict[str, float] = {}
+            for col in colunas_num:
+                q1 = float(df[col].quantile(0.25))
+                q3 = float(df[col].quantile(0.75))
+                iqr = q3 - q1
+                n_out = int(((df[col] < q1 - 1.5 * iqr) | (df[col] > q3 + 1.5 * iqr)).sum())
+                if n_out > 0:
+                    outliers[col] = round(n_out / len(df) * 100, 2)
+
+            # Estatísticas do target
+            alvo = df[target].dropna() if target in df.columns else df.iloc[:, -1]
+            amostras_zona: dict[str, int] = {}
+            amostras_bairro: dict[str, int] = {}
+            if "Zona" in df.columns:
+                amostras_zona = df["Zona"].value_counts().to_dict()
+            if "Bairro" in df.columns:
+                amostras_bairro = df["Bairro"].value_counts().to_dict()
+
+            contexto.coletor.registrar_qualidade_dados(
+                total_amostras=len(df),
+                media_alvo=float(alvo.mean()),
+                mediana_alvo=float(alvo.median()),
+                std_alvo=float(alvo.std()),
+                assimetria_alvo=float(alvo.skew()),
+                missing_por_coluna=missing,
+                outliers_por_coluna=outliers,
+                amostras_por_zona=amostras_zona,
+                amostras_por_bairro=amostras_bairro,
+            )
+            contexto.coletor.registrar_recursos_sistema()
 
 
 class Etapa05Staging(ContratoEtapa):
@@ -281,6 +329,32 @@ class Etapa10NestedCv(ContratoEtapa):
                     explicacoes_parametros=params_explicados,
                 )
             )
+
+            # ── CV por fold → Prometheus ───────────────────────────────────────
+            if contexto.coletor is not None:
+                import numpy as np
+                rmse_folds: list[float] = []
+                for fold in resultado_cv.resultados_folds:
+                    m = fold.metricas
+                    contexto.coletor.registrar_resultado_fold_cv(
+                        modelo=nome_modelo,
+                        fold=fold.indice_fold,
+                        rmse=m.rmse,
+                        mae=m.mae,
+                        r2=m.r2,
+                        mape=m.mape,
+                    )
+                    rmse_folds.append(m.rmse)
+
+                tempos = [f.tempo_segundos for f in resultado_cv.resultados_folds]
+                contexto.coletor.registrar_resumo_cv_modelo(
+                    modelo=nome_modelo,
+                    rmse_medio=resultado_cv.metricas_medias.rmse,
+                    r2_medio=resultado_cv.metricas_medias.r2,
+                    rmse_std=float(np.std(rmse_folds)),
+                    duracao_media_fold_s=float(np.mean(tempos)),
+                )
+                contexto.coletor.registrar_recursos_sistema()
 
 
 class Etapa11Estatistica(ContratoEtapa):
@@ -515,6 +589,43 @@ class Etapa17AvaliacaoHoldout(ContratoEtapa):
             )
         )
 
+        # ── Holdout granular + distribuição predições → Prometheus ────────────
+        if contexto.coletor is not None:
+            import numpy as np
+
+            # Zona
+            bairro_zona_map: dict[str, str] = {}
+            if "Bairro" in dados_holdout.columns and "Zona" in dados_holdout.columns:
+                bairro_zona_map = (
+                    dados_holdout[["Bairro", "Zona"]]
+                    .drop_duplicates()
+                    .set_index("Bairro")["Zona"]
+                    .to_dict()
+                )
+            for zona, m in metricas_zona.items():
+                qtd = int((df_com_prev["Zona"] == zona).sum())
+                contexto.coletor.registrar_holdout_zona(
+                    zona=zona, rmse=m.rmse, mae=m.mae,
+                    r2=m.r2, mape=m.mape, total_amostras=qtd,
+                )
+            for bairro, m in metricas_bairro.items():
+                zona_do_bairro = bairro_zona_map.get(bairro, "Desconhecida")
+                contexto.coletor.registrar_holdout_bairro(
+                    bairro=bairro, zona=zona_do_bairro,
+                    rmse=m.rmse, r2=m.r2,
+                )
+
+            # Distribuição dos resíduos e percentis do erro percentual
+            y_real = vetor_y.to_numpy(dtype=float)
+            res = y_real - previsoes
+            erros_pct = np.abs(res / np.maximum(y_real, 1.0)) * 100.0
+            contexto.coletor.registrar_distribuicao_predicoes(
+                valores_previstos=previsoes.tolist(),
+                residuos=res.tolist(),
+                erros_percentuais_abs=erros_pct.tolist(),
+            )
+            contexto.coletor.registrar_recursos_sistema()
+
 
 class Etapa18RegrasNegocio(ContratoEtapa):
     @property
@@ -617,6 +728,8 @@ class Etapa19RastreamentoMlflow(ContratoEtapa):
         target_col = contexto.configuracao_geral.dados.target
         colunas_descartar: tuple[str, ...] = (
             target_col,
+            "Código",
+            "Apartamento",
             "valor_m2",
             "media_valor_m2_bairro",
             "media_valor_m2_zona",

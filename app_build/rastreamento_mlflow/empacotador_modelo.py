@@ -74,6 +74,8 @@ class EmpacotadorModelo(PythonModel):
     ) -> pd.DataFrame:
         df_entrada = pd.DataFrame(model_input)
         colunas_indesejadas: tuple[str, ...] = (
+            "Código",
+            "Apartamento",
             "valor_m2",
             "media_valor_m2_bairro",
             "media_valor_m2_zona",

@@ -221,6 +221,169 @@ class ColetorPrometheus(ContratoTelemetria):
             ["bairro", "zona"],
         )
 
+        # ── CV por Fold e por Modelo ────────────────────────────────────────────
+        self._gauge_cv_rmse_fold: Final[Gauge] = Gauge(
+            "apartamentos_cv_rmse_fold",
+            "RMSE do fold externo do Nested CV por modelo",
+            ["modelo", "fold"],
+        )
+        self._gauge_cv_r2_fold: Final[Gauge] = Gauge(
+            "apartamentos_cv_r2_fold",
+            "R2 do fold externo do Nested CV por modelo",
+            ["modelo", "fold"],
+        )
+        self._gauge_cv_mae_fold: Final[Gauge] = Gauge(
+            "apartamentos_cv_mae_fold",
+            "MAE do fold externo do Nested CV por modelo",
+            ["modelo", "fold"],
+        )
+        self._gauge_cv_mape_fold: Final[Gauge] = Gauge(
+            "apartamentos_cv_mape_fold",
+            "MAPE do fold externo do Nested CV por modelo",
+            ["modelo", "fold"],
+        )
+        self._gauge_cv_rmse_medio: Final[Gauge] = Gauge(
+            "apartamentos_cv_rmse_medio",
+            "RMSE medio dos folds externos por modelo",
+            ["modelo"],
+        )
+        self._gauge_cv_r2_medio: Final[Gauge] = Gauge(
+            "apartamentos_cv_r2_medio",
+            "R2 medio dos folds externos por modelo",
+            ["modelo"],
+        )
+        self._gauge_cv_rmse_std: Final[Gauge] = Gauge(
+            "apartamentos_cv_rmse_std",
+            "Desvio padrao do RMSE entre os folds externos por modelo",
+            ["modelo"],
+        )
+        self._gauge_cv_duracao_media_fold: Final[Gauge] = Gauge(
+            "apartamentos_cv_duracao_media_fold_segundos",
+            "Duracao media por fold externo em segundos por modelo",
+            ["modelo"],
+        )
+
+        # ── Holdout Granular — Zona e Bairro ───────────────────────────────────
+        self._gauge_holdout_rmse_zona: Final[Gauge] = Gauge(
+            "apartamentos_holdout_rmse_zona",
+            "RMSE do holdout por zona territorial (R$)",
+            ["zona"],
+        )
+        self._gauge_holdout_mae_zona: Final[Gauge] = Gauge(
+            "apartamentos_holdout_mae_zona",
+            "MAE do holdout por zona territorial (R$)",
+            ["zona"],
+        )
+        self._gauge_holdout_r2_zona: Final[Gauge] = Gauge(
+            "apartamentos_holdout_r2_zona",
+            "R2 do holdout por zona territorial",
+            ["zona"],
+        )
+        self._gauge_holdout_mape_zona: Final[Gauge] = Gauge(
+            "apartamentos_holdout_mape_zona",
+            "MAPE do holdout por zona territorial (%)",
+            ["zona"],
+        )
+        self._gauge_holdout_rmse_bairro: Final[Gauge] = Gauge(
+            "apartamentos_holdout_rmse_bairro",
+            "RMSE do holdout por bairro (R$)",
+            ["bairro", "zona"],
+        )
+        self._gauge_holdout_r2_bairro: Final[Gauge] = Gauge(
+            "apartamentos_holdout_r2_bairro",
+            "R2 do holdout por bairro",
+            ["bairro", "zona"],
+        )
+        self._gauge_holdout_amostras_zona: Final[Gauge] = Gauge(
+            "apartamentos_holdout_amostras_zona",
+            "Quantidade de amostras no holdout por zona",
+            ["zona"],
+        )
+
+        # ── Qualidade dos Dados ────────────────────────────────────────────────
+        self._gauge_dados_total_amostras: Final[Gauge] = Gauge(
+            "apartamentos_dados_total_amostras",
+            "Total de amostras no dataset bruto",
+        )
+        self._gauge_dados_missing_pct: Final[Gauge] = Gauge(
+            "apartamentos_dados_missing_percentual",
+            "Percentual de valores ausentes por coluna",
+            ["coluna"],
+        )
+        self._gauge_dados_outliers_pct: Final[Gauge] = Gauge(
+            "apartamentos_dados_outliers_percentual",
+            "Percentual de outliers detectados por coluna (IQR)",
+            ["coluna"],
+        )
+        self._gauge_dados_media_alvo: Final[Gauge] = Gauge(
+            "apartamentos_dados_media_alvo",
+            "Media do target (Valor_da_Venda) no dataset de desenvolvimento",
+        )
+        self._gauge_dados_mediana_alvo: Final[Gauge] = Gauge(
+            "apartamentos_dados_mediana_alvo",
+            "Mediana do target (Valor_da_Venda) no dataset de desenvolvimento",
+        )
+        self._gauge_dados_std_alvo: Final[Gauge] = Gauge(
+            "apartamentos_dados_std_alvo",
+            "Desvio padrao do target (Valor_da_Venda) no dataset de desenvolvimento",
+        )
+        self._gauge_dados_assimetria_alvo: Final[Gauge] = Gauge(
+            "apartamentos_dados_assimetria_alvo",
+            "Assimetria (skewness) do target no dataset de desenvolvimento",
+        )
+        self._gauge_dados_amostras_zona: Final[Gauge] = Gauge(
+            "apartamentos_dados_amostras_por_zona",
+            "Total de amostras por zona no dataset de desenvolvimento",
+            ["zona"],
+        )
+        self._gauge_dados_amostras_bairro: Final[Gauge] = Gauge(
+            "apartamentos_dados_amostras_por_bairro",
+            "Total de amostras por bairro no dataset de desenvolvimento",
+            ["bairro"],
+        )
+
+        # ── Confiança e Intervalos das Predições ──────────────────────────────
+        self._gauge_predicao_residuo_medio: Final[Gauge] = Gauge(
+            "apartamentos_predicao_residuo_medio",
+            "Residuo medio das predicoes (vies do modelo)",
+        )
+        self._gauge_predicao_residuo_std: Final[Gauge] = Gauge(
+            "apartamentos_predicao_residuo_std",
+            "Desvio padrao dos residuos das predicoes",
+        )
+        self._histograma_valor_previsto: Final[Histogram] = Histogram(
+            "apartamentos_predicao_valor_previsto",
+            "Distribuicao dos valores previstos pelo modelo",
+            buckets=[200_000, 300_000, 400_000, 500_000, 600_000, 750_000,
+                     1_000_000, 1_500_000, 2_000_000],
+        )
+        self._gauge_predicao_erro_percentual_p50: Final[Gauge] = Gauge(
+            "apartamentos_predicao_erro_percentual_p50",
+            "Percentil 50 do erro percentual absoluto das predicoes",
+        )
+        self._gauge_predicao_erro_percentual_p90: Final[Gauge] = Gauge(
+            "apartamentos_predicao_erro_percentual_p90",
+            "Percentil 90 do erro percentual absoluto das predicoes",
+        )
+        self._gauge_predicao_erro_percentual_p95: Final[Gauge] = Gauge(
+            "apartamentos_predicao_erro_percentual_p95",
+            "Percentil 95 do erro percentual absoluto das predicoes",
+        )
+
+        # ── Recursos do Sistema ─────────────────────────────────────────────────
+        self._gauge_sistema_cpu_pct: Final[Gauge] = Gauge(
+            "apartamentos_sistema_cpu_uso_percentual",
+            "Uso de CPU percentual durante execucao do pipeline",
+        )
+        self._gauge_sistema_memoria_mb: Final[Gauge] = Gauge(
+            "apartamentos_sistema_memoria_uso_mb",
+            "Uso de memoria RAM em MB durante execucao do pipeline",
+        )
+        self._gauge_sistema_threads_ativas: Final[Gauge] = Gauge(
+            "apartamentos_sistema_threads_ativas",
+            "Numero de threads ativas no processo do pipeline",
+        )
+
     # ── Inferência ──────────────────────────────────────────────────────────────
 
     @override
@@ -397,3 +560,137 @@ class ColetorPrometheus(ContratoTelemetria):
         self._gauge_amostras_bairro.labels(
             bairro=bairro_norm, zona=zona_norm
         ).set(float(total_amostras))
+
+    # ── CV por Fold e por Modelo ─────────────────────────────────────────────────
+
+    def registrar_resultado_fold_cv(
+        self,
+        modelo: str,
+        fold: int,
+        rmse: float,
+        mae: float,
+        r2: float,
+        mape: float,
+    ) -> None:
+        """Registra métricas individuais de cada fold externo do Nested CV."""
+        m = str(modelo)
+        f = str(fold)
+        self._gauge_cv_rmse_fold.labels(modelo=m, fold=f).set(rmse)
+        self._gauge_cv_r2_fold.labels(modelo=m, fold=f).set(r2)
+        self._gauge_cv_mae_fold.labels(modelo=m, fold=f).set(mae)
+        self._gauge_cv_mape_fold.labels(modelo=m, fold=f).set(mape)
+
+    def registrar_resumo_cv_modelo(
+        self,
+        modelo: str,
+        rmse_medio: float,
+        r2_medio: float,
+        rmse_std: float,
+        duracao_media_fold_s: float,
+    ) -> None:
+        """Registra resumo agregado do Nested CV por modelo."""
+        m = str(modelo)
+        self._gauge_cv_rmse_medio.labels(modelo=m).set(rmse_medio)
+        self._gauge_cv_r2_medio.labels(modelo=m).set(r2_medio)
+        self._gauge_cv_rmse_std.labels(modelo=m).set(rmse_std)
+        self._gauge_cv_duracao_media_fold.labels(modelo=m).set(duracao_media_fold_s)
+
+    # ── Holdout Granular ─────────────────────────────────────────────────────────
+
+    def registrar_holdout_zona(
+        self,
+        zona: str,
+        rmse: float,
+        mae: float,
+        r2: float,
+        mape: float,
+        total_amostras: int,
+    ) -> None:
+        """Registra métricas do holdout desagregadas por zona territorial."""
+        z = str(zona).strip() or "Desconhecida"
+        self._gauge_holdout_rmse_zona.labels(zona=z).set(rmse)
+        self._gauge_holdout_mae_zona.labels(zona=z).set(mae)
+        self._gauge_holdout_r2_zona.labels(zona=z).set(r2)
+        self._gauge_holdout_mape_zona.labels(zona=z).set(mape)
+        self._gauge_holdout_amostras_zona.labels(zona=z).set(float(total_amostras))
+
+    def registrar_holdout_bairro(
+        self,
+        bairro: str,
+        zona: str,
+        rmse: float,
+        r2: float,
+    ) -> None:
+        """Registra métricas do holdout desagregadas por bairro."""
+        b = str(bairro).strip() or "Desconhecido"
+        z = str(zona).strip() or "Desconhecida"
+        self._gauge_holdout_rmse_bairro.labels(bairro=b, zona=z).set(rmse)
+        self._gauge_holdout_r2_bairro.labels(bairro=b, zona=z).set(r2)
+
+    # ── Qualidade dos Dados ──────────────────────────────────────────────────────
+
+    def registrar_qualidade_dados(
+        self,
+        total_amostras: int,
+        media_alvo: float,
+        mediana_alvo: float,
+        std_alvo: float,
+        assimetria_alvo: float,
+        missing_por_coluna: dict[str, float],
+        outliers_por_coluna: dict[str, float],
+        amostras_por_zona: dict[str, int],
+        amostras_por_bairro: dict[str, int],
+    ) -> None:
+        """Registra métricas de qualidade e distribuição dos dados de entrada."""
+        self._gauge_dados_total_amostras.set(float(total_amostras))
+        self._gauge_dados_media_alvo.set(media_alvo)
+        self._gauge_dados_mediana_alvo.set(mediana_alvo)
+        self._gauge_dados_std_alvo.set(std_alvo)
+        self._gauge_dados_assimetria_alvo.set(assimetria_alvo)
+        for coluna, pct in missing_por_coluna.items():
+            self._gauge_dados_missing_pct.labels(coluna=str(coluna)).set(pct)
+        for coluna, pct in outliers_por_coluna.items():
+            self._gauge_dados_outliers_pct.labels(coluna=str(coluna)).set(pct)
+        for zona, qtd in amostras_por_zona.items():
+            self._gauge_dados_amostras_zona.labels(zona=str(zona)).set(float(qtd))
+        for bairro, qtd in amostras_por_bairro.items():
+            self._gauge_dados_amostras_bairro.labels(bairro=str(bairro)).set(float(qtd))
+
+    # ── Confiança e Distribuição das Predições ───────────────────────────────────
+
+    def registrar_distribuicao_predicoes(
+        self,
+        valores_previstos: list[float],
+        residuos: list[float],
+        erros_percentuais_abs: list[float],
+    ) -> None:
+        """Registra distribuição dos valores previstos e qualidade dos resíduos."""
+        import numpy as np
+        arr_res = np.array(residuos, dtype=float)
+        arr_err = np.array(erros_percentuais_abs, dtype=float)
+
+        self._gauge_predicao_residuo_medio.set(float(np.mean(arr_res)))
+        self._gauge_predicao_residuo_std.set(float(np.std(arr_res)))
+        self._gauge_predicao_erro_percentual_p50.set(float(np.percentile(arr_err, 50)))
+        self._gauge_predicao_erro_percentual_p90.set(float(np.percentile(arr_err, 90)))
+        self._gauge_predicao_erro_percentual_p95.set(float(np.percentile(arr_err, 95)))
+        for v in valores_previstos:
+            self._histograma_valor_previsto.observe(v)
+
+    # ── Recursos do Sistema ──────────────────────────────────────────────────────
+
+    def registrar_recursos_sistema(self) -> None:
+        """Captura e publica uso de CPU, memória e threads do processo atual."""
+        try:
+            import os
+            import threading
+            import psutil  # type: ignore[import]
+            proc = psutil.Process(os.getpid())
+            self._gauge_sistema_cpu_pct.set(proc.cpu_percent(interval=0.1))
+            self._gauge_sistema_memoria_mb.set(proc.memory_info().rss / 1_048_576)
+            self._gauge_sistema_threads_ativas.set(float(threading.active_count()))
+        except ImportError:
+            # psutil não instalado — registra zeros sem falhar o pipeline
+            self._gauge_sistema_cpu_pct.set(0.0)
+            self._gauge_sistema_memoria_mb.set(0.0)
+            self._gauge_sistema_threads_ativas.set(0.0)

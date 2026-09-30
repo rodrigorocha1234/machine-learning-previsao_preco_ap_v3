@@ -272,6 +272,8 @@ class ObservadorMlflow(ContratoObservador):
                     )
 
                 colunas_indesejadas_api: tuple[str, ...] = (
+                    "Código",
+                    "Apartamento",
                     "valor_m2",
                     "media_valor_m2_bairro",
                     "media_valor_m2_zona",
@@ -292,7 +294,22 @@ class ObservadorMlflow(ContratoObservador):
                 previsoes_exemplo = modelo_envelopado.predict(
                     context=None, model_input=exemplo_x
                 )
-                assinatura = infer_signature(exemplo_x, previsoes_exemplo)
+
+                # ── Assinatura explícita — sem Código/Apartamento ───────────────
+                from mlflow.models.signature import ModelSignature
+                from mlflow.types.schema import ColSpec, Schema
+
+                assinatura = ModelSignature(
+                    inputs=Schema([
+                        ColSpec("string", "Bairro"),
+                        ColSpec("string", "Zona"),
+                        ColSpec("long",   "Quartos"),
+                        ColSpec("long",   "Banheiros"),
+                        ColSpec("long",   "Vagas_Garagem"),
+                        ColSpec("double", "Metragem"),
+                    ]),
+                    outputs=infer_signature(exemplo_x, previsoes_exemplo).outputs,
+                )
 
 
                 info_modelo = mlflow.pyfunc.log_model(
