@@ -1,4 +1,5 @@
 """Exporta o último snapshot do treinamento; não requer bibliotecas externas."""
+
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path

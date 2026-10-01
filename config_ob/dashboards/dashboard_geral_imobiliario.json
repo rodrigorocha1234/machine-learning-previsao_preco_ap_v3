@@ -46,7 +46,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**Serving:** coleta real em `/metrics`, por requisição e por imóvel. Métricas começam na ativação e reiniciam com o processo. Sem tráfego, médias e quantis ficam sem dados. **Treino/holdout:** fonte separada `ml_service`; não são erros observados em produção. O script `servico_monitor_drift.py` gera simulações e não deve alimentar a fonte de produção. Painéis indisponíveis não significam valor zero."
+        "content": "**Serving:** coleta real em `/metrics`, por requisição e por imóvel. Métricas começam na ativação e reiniciam com o processo. Sem tráfego, médias e quantis ficam sem dados. **Treino/holdout:** fonte separada `ml_service`; não são erros observados em produção. O script `servico_monitor_drift.py` gera simulações e não deve alimentar a fonte de produção. Painéis indisponíveis não significam valor zero. **Treino persistente:** os dados de ml_service são o último snapshot salvo da avaliação; consulte sua idade. A versão avaliada pode ser diferente daquela servida na API."
       }
     },
     {
@@ -1256,7 +1256,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**MAE, RMSE e viés em produção:** indisponíveis até integrar valores reais de venda associados às previsões. **PSI de produção:** exige uma distribuição de referência versionada e janela de entradas reais; não há esse fluxo integrado neste projeto. Os painéis legados de drift abaixo recebem apenas a fonte `ml_service`, que pode conter demonstrações. Não use esses valores como evidência de drift de produção. **Referência por suficiência amostral:** a inferência vetorizada atual não aplica os limites de suficiência; o painel mede somente fallback por localidade ausente."
+        "content": "**MAE, RMSE e viés em produção:** indisponíveis até integrar valores reais de venda associados às previsões. **PSI de produção:** exige uma distribuição de referência versionada e janela de entradas reais; não há esse fluxo integrado neste projeto. Os painéis legados de drift abaixo recebem apenas a fonte `ml_service`, que contém o diagnóstico do pipeline, não uma janela de entradas do serving. Não use esses valores como evidência de drift de produção. **Referência por suficiência amostral:** a inferência vetorizada atual não aplica os limites de suficiência; o painel mede somente fallback por localidade ausente."
       }
     },
     {
@@ -1267,7 +1267,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Exportador na porta 8000. Sem ele os painéis de treino e holdout não recebem dados.",
+      "description": "Exportador contínuo metricas-treino:8000. Publica o último snapshot de avaliação, mesmo após o término do pipeline.",
       "gridPos": {
         "x": 0,
         "y": 109,
@@ -5054,12 +5054,12 @@
     {
       "id": 1042,
       "title": "Nested CV: média e desvio padrão de RMSE",
-      "type": "table",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados da última avaliação salva no snapshot; preservados após o fim do treinamento pelo exportador ml_service.",
       "gridPos": {
         "x": 0,
         "y": 263,
@@ -5070,72 +5070,83 @@
         "defaults": {
           "unit": "currencyBRL",
           "decimals": 3,
-          "noValue": "Sem dados"
+          "noValue": "Sem dados",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Desvio padrão$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
       },
       "targets": [
         {
           "refId": "A",
           "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"rmse\"}",
-          "legendFormat": "Média",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Média",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "refId": "B",
           "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"rmse\"}",
-          "legendFormat": "Desvio padrão",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Desvio padrão",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "modelo",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job 1": true,
-              "job 2": true,
-              "metrica 1": true,
-              "metrica 2": true
-            },
-            "renameByName": {
-              "Value #A": "Média",
-              "Value #B": "Desvio padrão",
-              "Value 1": "Média",
-              "Value 2": "Desvio padrão"
-            }
-          }
-        }
-      ]
+      "transformations": []
     },
     {
       "id": 1043,
       "title": "Nested CV: média e desvio padrão de MAE",
-      "type": "table",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados da última avaliação salva no snapshot; preservados após o fim do treinamento pelo exportador ml_service.",
       "gridPos": {
         "x": 12,
         "y": 263,
@@ -5146,72 +5157,83 @@
         "defaults": {
           "unit": "currencyBRL",
           "decimals": 3,
-          "noValue": "Sem dados"
+          "noValue": "Sem dados",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Desvio padrão$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
       },
       "targets": [
         {
           "refId": "A",
           "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"mae\"}",
-          "legendFormat": "Média",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Média",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "refId": "B",
           "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"mae\"}",
-          "legendFormat": "Desvio padrão",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Desvio padrão",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "modelo",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job 1": true,
-              "job 2": true,
-              "metrica 1": true,
-              "metrica 2": true
-            },
-            "renameByName": {
-              "Value #A": "Média",
-              "Value #B": "Desvio padrão",
-              "Value 1": "Média",
-              "Value 2": "Desvio padrão"
-            }
-          }
-        }
-      ]
+      "transformations": []
     },
     {
       "id": 1044,
       "title": "Nested CV: média e desvio padrão de MSE",
-      "type": "table",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados da última avaliação salva no snapshot; preservados após o fim do treinamento pelo exportador ml_service.",
       "gridPos": {
         "x": 0,
         "y": 271,
@@ -5222,72 +5244,83 @@
         "defaults": {
           "unit": "short",
           "decimals": 3,
-          "noValue": "Sem dados"
+          "noValue": "Sem dados",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Desvio padrão$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
       },
       "targets": [
         {
           "refId": "A",
           "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"mse\"}",
-          "legendFormat": "Média",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Média",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "refId": "B",
           "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"mse\"}",
-          "legendFormat": "Desvio padrão",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Desvio padrão",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "modelo",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job 1": true,
-              "job 2": true,
-              "metrica 1": true,
-              "metrica 2": true
-            },
-            "renameByName": {
-              "Value #A": "Média",
-              "Value #B": "Desvio padrão",
-              "Value 1": "Média",
-              "Value 2": "Desvio padrão"
-            }
-          }
-        }
-      ]
+      "transformations": []
     },
     {
       "id": 1045,
       "title": "Nested CV: média e desvio padrão de R2",
-      "type": "table",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados da última avaliação salva no snapshot; preservados após o fim do treinamento pelo exportador ml_service.",
       "gridPos": {
         "x": 12,
         "y": 271,
@@ -5298,72 +5331,83 @@
         "defaults": {
           "unit": "short",
           "decimals": 3,
-          "noValue": "Sem dados"
+          "noValue": "Sem dados",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Desvio padrão$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
       },
       "targets": [
         {
           "refId": "A",
           "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"r2\"}",
-          "legendFormat": "Média",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Média",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "refId": "B",
           "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"r2\"}",
-          "legendFormat": "Desvio padrão",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Desvio padrão",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "modelo",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job 1": true,
-              "job 2": true,
-              "metrica 1": true,
-              "metrica 2": true
-            },
-            "renameByName": {
-              "Value #A": "Média",
-              "Value #B": "Desvio padrão",
-              "Value 1": "Média",
-              "Value 2": "Desvio padrão"
-            }
-          }
-        }
-      ]
+      "transformations": []
     },
     {
       "id": 1046,
       "title": "Nested CV: média e desvio padrão de RMSE_RELATIVO",
-      "type": "table",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados da última avaliação salva no snapshot; preservados após o fim do treinamento pelo exportador ml_service.",
       "gridPos": {
         "x": 0,
         "y": 279,
@@ -5374,72 +5418,83 @@
         "defaults": {
           "unit": "percentunit",
           "decimals": 3,
-          "noValue": "Sem dados"
+          "noValue": "Sem dados",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Desvio padrão$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
       },
       "targets": [
         {
           "refId": "A",
           "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"rmse_relativo\"}",
-          "legendFormat": "Média",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Média",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "refId": "B",
           "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"rmse_relativo\"}",
-          "legendFormat": "Desvio padrão",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Desvio padrão",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         }
       ],
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "modelo",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job 1": true,
-              "job 2": true,
-              "metrica 1": true,
-              "metrica 2": true
-            },
-            "renameByName": {
-              "Value #A": "Média",
-              "Value #B": "Desvio padrão",
-              "Value 1": "Média",
-              "Value 2": "Desvio padrão"
-            }
-          }
-        }
-      ]
+      "transformations": []
     },
     {
       "id": 1047,
       "title": "Nested CV: média e desvio padrão de MAPE",
-      "type": "table",
+      "type": "bargauge",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados da última avaliação salva no snapshot; preservados após o fim do treinamento pelo exportador ml_service.",
       "gridPos": {
         "x": 12,
         "y": 279,
@@ -5450,62 +5505,103 @@
         "defaults": {
           "unit": "percentunit",
           "decimals": 3,
-          "noValue": "Sem dados"
+          "noValue": "Sem dados",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*Desvio padrão$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 14,
+          "valueSize": 16
+        }
       },
       "targets": [
         {
           "refId": "A",
           "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"mape\"}",
-          "legendFormat": "Média",
-          "format": "table",
-          "instant": true
+          "legendFormat": "{{modelo}} — Média",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
         },
         {
           "refId": "B",
           "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"mape\"}",
-          "legendFormat": "Desvio padrão",
-          "format": "table",
+          "legendFormat": "{{modelo}} — Desvio padrão",
+          "format": "time_series",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "transformations": []
+    },
+    {
+      "id": 1048,
+      "title": "Idade do snapshot de treino",
+      "description": "Tempo desde o último estado salvo da avaliação. Métricas persistidas permanecem disponíveis quando o treinamento encerra.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 287,
+        "w": 12,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - apartamentos_snapshot_timestamp{job=\"ml_service\"}",
           "instant": true
         }
       ],
-      "transformations": [
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "modelo",
-            "mode": "outer"
-          }
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Snapshot indisponível"
         },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "__name__ 1": true,
-              "__name__ 2": true,
-              "instance 1": true,
-              "instance 2": true,
-              "job 1": true,
-              "job 2": true,
-              "metrica 1": true,
-              "metrica 2": true
-            },
-            "renameByName": {
-              "Value #A": "Média",
-              "Value #B": "Desvio padrão",
-              "Value 1": "Média",
-              "Value 2": "Desvio padrão"
-            }
-          }
-        }
-      ]
+        "overrides": []
+      }
     }
   ],
   "preload": false,
@@ -5588,6 +5684,6 @@
   "timezone": "America/Sao_Paulo",
   "title": "Previsão Imobiliária — Ribeirão Preto/SP",
   "uid": "painel-previsao-imoveis",
-  "version": 19,
+  "version": 21,
   "description": "Operação real do MLflow Serving, previsões por localidade e resultados de treino separados."
 }

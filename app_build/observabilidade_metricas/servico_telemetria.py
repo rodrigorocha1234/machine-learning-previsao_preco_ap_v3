@@ -1,10 +1,11 @@
 from typing import Final
 
-from app_build.observabilidade_metricas.persistencia_metricas import PersistenciaMetricas
-
 from prometheus_client import start_http_server
 
 from app_build.observabilidade_metricas.coletor_prometheus import ColetorPrometheus
+from app_build.observabilidade_metricas.persistencia_metricas import (
+    PersistenciaMetricas,
+)
 
 
 class ServicoTelemetria:

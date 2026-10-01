@@ -378,6 +378,9 @@ Exemplo ilustrativo: dois modelos têm RMSE médio de R$ 50.000. Um apresenta de
 
 No MLflow, o run pai `nested_cv_<modelo>` recebe `rmse_std`, `mae_std`, `mse_std`, `r2_std`, `rmse_relativo_std` e `mape_std`, além das médias, `desvio_padrao_ddof=0` e `total_folds_externos`. MAPE e RMSE relativo são armazenados como frações; 0,05 corresponde a 5 pontos percentuais de dispersão. RMSE/MAE usam R$, MSE usa R$² e R² é adimensional.
 
-No Prometheus, `apartamentos_cv_desvio_padrao{modelo,metrica}` e `apartamentos_cv_media{modelo,metrica}` alimentam os seis painéis de sensibilidade no dashboard geral do Grafana. A métrica existente `apartamentos_cv_rmse_std` usa o mesmo resultado centralizado. Os novos registros são preenchidos na próxima execução do pipeline; históricos não são recalculados automaticamente. Sem o exportador `ml_service` ativo, os painéis podem ficar sem dados.
+No Prometheus, `apartamentos_cv_desvio_padrao{modelo,metrica}` e `apartamentos_cv_media{modelo,metrica}` alimentam os seis painéis de sensibilidade no dashboard geral do Grafana. A métrica existente `apartamentos_cv_rmse_std` usa o mesmo resultado centralizado. Os novos registros são preenchidos na próxima execução do pipeline; históricos não são recalculados automaticamente. O job `ml_service` lê o snapshot persistente no serviço `metricas-treino`, mantendo os resultados disponíveis após o treinamento. Para gerar uma nova avaliação sem promover um modelo, execute `.venv/bin/python -m scripts.recalcular_metricas`.
 
 A política de seleção do campeão continua a mesma; o desvio padrão é um diagnóstico adicional, sem alterar automaticamente o ranking.
+
+
+Os seis painéis de sensibilidade exibem barras horizontais com nomes explícitos: `<modelo> — Média` (azul) e `<modelo> — Desvio padrão` (laranja). As consultas instantâneas usam os labels das séries diretamente, sem união de tabelas por uma coluna `modelo` inexistente nos frames retornados pelo Grafana.

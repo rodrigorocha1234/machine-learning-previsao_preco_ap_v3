@@ -19,34 +19,20 @@
 
 ## 1. Arquitetura da Stack
 
+```mermaid
+flowchart LR
+    Pipeline[Pipeline de treinamento] --> Coletor[ColetorPrometheus]
+    Coletor --> Snapshot[Snapshot atômico: treino.prom]
+    Snapshot --> Exportador[metricas-treino:8000/metrics]
+    Exportador --> Prometheus[Prometheus:9090]
+    Serving[MLflow Serving:8080/metrics] --> Prometheus
+    Prometheus --> Grafana[Grafana:3000]
+    Pipeline --> Logs[Logs / Alloy / Loki]
+    Serving --> Logs
+    Logs --> Grafana
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         PIPELINE PYTHON                              │
-│                                                                      │
-│  FluxoPrincipal                                                      │
-│   ├── ServicoTelemetria ──→ ColetorPrometheus ──→ :8000/metrics      │
-│   ├── EmissorLogs       ──→ stdout/stderr ──→ Alloy ──→ Loki         │
-│   └── ExecutorEsteira   ──→ registra etapas em tempo real            │
-│        ├── Etapa04ValidarDados   → qualidade_dados                   │
-│        ├── Etapa09Drift          → drift_dados, drift_feature        │
-│        ├── Etapa10NestedCv       → cv_rmse_fold, cv_resumo           │
-│        ├── Etapa11Estatistica    → testes_estatisticos               │
-│        ├── Etapa17AvaliacaoHoldout → holdout_zona, holdout_bairro    │
-│        └── Etapa18RegrasNegocio  → metricas_negocio                  │
-└──────────────────────────────────────────────────────────────────────┘
-         │                                    │
-         ▼                                    ▼
-  ┌─────────────┐                    ┌──────────────┐
-  │  Prometheus │◄──scrape :8000─── │   :8000/     │
-  │   :9090     │                    │   metrics    │
-  └──────┬──────┘                    └──────────────┘
-         │
-         ▼
-  ┌─────────────┐     ┌───────────┐
-  │   Grafana   │◄────│   Loki    │
-  │   :3000     │     │   :3100   │
-  └─────────────┘     └───────────┘
-```
+
+O exportador de treino é independente do processo de treinamento. Ele mantém o último snapshot disponível para o Prometheus após o encerramento do pipeline. A API possui uma fonte separada de métricas reais de inferência.
 
 ---
 
@@ -387,7 +373,7 @@ Entradas são inspecionadas nos formatos `dataframe_records` e `dataframe_split`
 - **MAE, RMSE e viés em produção:** dependem de integrar o preço real da venda associado a cada previsão. As métricas `apartamentos_holdout_*` são avaliação offline e estão identificadas assim.
 - **PSI de produção:** exige baseline versionado e janela de dados reais. O script `scripts/servico_monitor_drift.py` usa dados simulados e valores fixos; não representa monitoramento real do serving. Os painéis legados de drift estão marcados como diagnóstico da fonte `ml_service`.
 - **Fallback por suficiência:** o enriquecimento vetorizado atual aplica fallback quando a localidade está ausente das referências. O painel de cobertura mede esse comportamento real, não uma decisão por tamanho mínimo de amostra.
-- **Treino/holdout:** dependem do exportador na porta 8000 (`ml_service`). Com esse processo parado, o indicador de disponibilidade fica em zero e os demais painéis podem ficar sem dados.
+- **Treino/holdout:** o serviço contínuo `metricas-treino:8000` (`ml_service`) exporta o último snapshot persistido. Encerrar o treinamento não remove mais as métricas. Antes da primeira avaliação, `/metrics` responde 503 e o dashboard sinaliza indisponibilidade.
 
 ### Aplicação das configurações
 
@@ -397,3 +383,27 @@ docker kill --signal=HUP prometheus
 ```
 
 O Grafana lê o JSON provisionado automaticamente a cada 10 segundos. A versão do modelo é fixada na inicialização, evitando que a identificação apresentada diverja da versão carregada caso o alias seja alterado depois. Reinicie o serving para carregar uma nova versão. Mantenha um único worker neste modo de coleta em memória.
+
+
+## Persistência das métricas de treinamento
+
+O pipeline salva `observabilidade_data/treino.prom` atomicamente no início e no fim de cada etapa, e após registrar a conclusão. O contêiner `metricas-treino` lê esse snapshot em modo somente leitura e continua publicando-o após a saída do processo Python. O job `ml_service` aponta para `metricas-treino:8000`, preservando as consultas dos dashboards.
+
+As séries representam o último estado salvo da avaliação, não um novo treinamento a cada scrape. Durante uma execução, alguns resultados ainda estarão incompletos. O painel **Idade do snapshot de treino** mostra o tempo desde a última gravação. O processo de avaliação deve executar uma instância por vez para evitar sobrescritas concorrentes. O arquivo é local, ignorado pelo Git, e persiste entre reinícios do exportador.
+
+Para iniciar o serviço e recarregar o Prometheus:
+
+```bash
+docker compose --profile dashboard up -d --no-deps metricas-treino
+docker kill --signal=HUP prometheus
+```
+
+Para recalcular as métricas com os dados e YAML atuais, registrando a avaliação no MLflow, **sem executar a etapa de registro/promoção do modelo**:
+
+```bash
+.venv/bin/python -m scripts.recalcular_metricas
+```
+
+Esse comando executa novamente o treinamento e a avaliação configurados (etapas 1 a 18); não é uma mera consulta ao histórico. O modelo publicado na API permanece o mesmo, e os resultados dessa avaliação não devem ser confundidos automaticamente com a versão servida. A execução normal de `FluxoPrincipal` também persiste as métricas e mantém seu fluxo habitual de publicação.
+
+Os percentuais de dados ausentes e outliers são publicados inclusive quando iguais a zero. Valores históricos não são inventados nem substituídos por zeros para preencher gráficos. A variável `METRICAS_TREINO_ARQUIVO` permite configurar outro caminho; produtor e volume do exportador precisam apontar para o mesmo arquivo.
