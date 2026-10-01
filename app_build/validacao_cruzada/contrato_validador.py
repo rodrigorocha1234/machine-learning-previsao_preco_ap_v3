@@ -32,6 +32,7 @@ class ResultadoNestedCv:
     resultados_folds: tuple[ResultadoFoldExterno, ...]
     metricas_medias: MetricasRegressao
     metricas_medianas: MetricasRegressao
+    metricas_desvios_padrao: MetricasRegressao
     residuos_totais: np.ndarray
 
 

@@ -216,6 +216,9 @@ class MotorImobiliario(ContratoNegocio):
             valor_previsto=vetor_previsoes,
             valor_m2_previsto=previsoes_m2,
             # --- Nível Global ---
+            global_mediana_mercado=med_val_glob,
+            global_media_mercado=media_val_glob,
+            global_mediana_m2_mercado=med_m2_glob,
             indice_imovel_global=previsoes_m2 / med_m2_glob,
             diferenca_perc_global=(
                 (vetor_previsoes - media_val_glob) / media_val_glob
@@ -226,6 +229,9 @@ class MotorImobiliario(ContratoNegocio):
             global_faixa_segura_piso=med_val_glob * 0.90,
             global_faixa_segura_teto=med_val_glob,
             # --- Nível Zona ---
+            zona_mediana_mercado=zona_med_val_total,
+            zona_media_mercado=zona_med_val_series,
+            zona_mediana_m2_mercado=zona_med_m2_series,
             indice_imovel_zona=previsoes_m2 / zona_med_m2_series,
             diferenca_perc_zona=(
                 (vetor_previsoes - zona_med_val_series) / zona_med_val_series
@@ -236,6 +242,9 @@ class MotorImobiliario(ContratoNegocio):
             zona_faixa_segura_piso=zona_med_val_total * 0.90,
             zona_faixa_segura_teto=zona_med_val_total,
             # --- Nível Bairro ---
+            bairro_mediana_mercado=bairro_med_val_total,
+            bairro_media_mercado=bairro_med_val_series,
+            bairro_mediana_m2_mercado=bairro_med_m2_series,
             indice_imovel_bairro=previsoes_m2 / bairro_med_m2_series,
             diferenca_perc_bairro=(
                 (vetor_previsoes - bairro_med_val_series) / bairro_med_val_series

@@ -8,3 +8,5 @@ pgdata/
 storage-data/
 __pycache__/
 .env
+
+observabilidade_data/

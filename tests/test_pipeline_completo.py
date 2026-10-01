@@ -126,6 +126,50 @@ def test_regras_negocio_hierarquia_global_zona_bairro(base_exemplo):
     assert resultado.faixa_segura_piso < resultado.faixa_segura_teto
 
 
+def test_empacotador_calcula_previsoes_por_zona_e_bairro(base_exemplo):
+    from sklearn.base import BaseEstimator
+
+    from app_build.rastreamento_mlflow.empacotador_modelo import EmpacotadorModelo
+
+    class EstimadorTeste(BaseEstimator):
+        def predict(self, dados: pd.DataFrame) -> list[float]:
+            return [100000.0, 300000.0, 500000.0]
+
+    estatisticas = AgregadorHierarquico(
+        minima_zona=1, minima_bairro=1
+    ).calcular_estatisticas(base_exemplo, "Valor_da_Venda")
+    empacotador = EmpacotadorModelo(
+        pipeline_scikit=EstimadorTeste(),
+        motor_imobiliario=MotorImobiliario(estatisticas),
+    )
+    dados = base_exemplo.iloc[[0, 1, 4]].drop(columns=["Valor_da_Venda"])
+
+    previsoes = empacotador.predict(context=None, model_input=dados)
+
+    assert previsoes["valor_previsto_zona"].tolist() == pytest.approx(
+        [300000.0, 300000.0, 300000.0]
+    )
+    assert previsoes["valor_previsto_bairro"].tolist() == pytest.approx(
+        [200000.0, 200000.0, 500000.0]
+    )
+    assert previsoes["valor_previsto_medio_zona"].tolist() == pytest.approx(
+        previsoes["valor_previsto_zona"].tolist()
+    )
+    assert previsoes["valor_previsto_medio_bairro"].tolist() == pytest.approx(
+        previsoes["valor_previsto_bairro"].tolist()
+    )
+    assert previsoes["valor_m2_previsto_zona"].tolist() == pytest.approx(
+        [
+            (100000.0 / 65.0 + 300000.0 / 110.0 + 500000.0 / 160.0) / 3,
+        ]
+        * 3
+    )
+    assert previsoes["valor_m2_previsto_bairro"].tolist() == pytest.approx(
+        [(100000.0 / 65.0 + 300000.0 / 110.0) / 2] * 2
+        + [500000.0 / 160.0]
+    )
+
+
 def test_estatisticas_friedman_nemenyi():
     scores = pd.DataFrame({
         "mod_a": [10.0, 11.0, 12.0, 10.5, 11.2],
@@ -146,6 +190,20 @@ def test_telemetria_prometheus():
     coletor = ColetorPrometheus()
     coletor.registrar_inferencia(0.015, "Zona Sul", 850000.0)
     coletor.atualizar_metricas_modelo(rmse=25000.0, mae=18000.0, r2=0.88)
+    coletor.registrar_holdout_zona(
+        zona="Zona Sul", rmse=25000.0, mae=18000.0, r2=0.88,
+        mape=4.2, total_amostras=12, valor_medio_previsto=720000.0,
+    )
+    coletor.registrar_holdout_bairro(
+        bairro="Jardim Botânico", zona="Zona Sul", rmse=22000.0, r2=0.9,
+        valor_medio_previsto=810000.0,
+    )
+    assert coletor._gauge_holdout_valor_medio_previsto_zona.labels(
+        zona="Zona Sul"
+    )._value.get() == 720000.0
+    assert coletor._gauge_holdout_valor_medio_previsto_bairro.labels(
+        bairro="Jardim Botânico", zona="Zona Sul"
+    )._value.get() == 810000.0
 
 
 def test_regras_negocio_rastreamento_mlflow(
@@ -239,9 +297,15 @@ def test_executor_esteira_logs_etapas() -> None:
     assert logs_capturados[3].mensagem == "--- Concluida etapa: 02_teste_beta (Etapa 2 de 2)"
 
 
-def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_remocao_parametros_indesejados_api_mlflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    base_exemplo: pd.DataFrame,
+) -> None:
     import mlflow
+    from sklearn.compose import ColumnTransformer
     from sklearn.linear_model import Ridge
+    from sklearn.pipeline import make_pipeline
 
     from app_build.rastreamento_mlflow.contrato_observador import (
         EventoTreinoFinalConcluido,
@@ -252,6 +316,10 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
     df_com_indesejados = pd.DataFrame({
         "Código": [101, 102],
         "Apartamento": ["Ap 1", "Ap 2"],
+        "Bairro": ["Jardim Botânico", "Jardim Botânico"],
+        "Zona": ["Zona Sul", "Zona Sul"],
+        "Banheiros": [2, 2],
+        "Vagas_Garagem": [1, 2],
         "Metragem": [60.0, 80.0],
         "Quartos": [2, 3],
         "valor_m2": [5000.0, 6000.0],
@@ -259,8 +327,18 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
         "media_valor_m2_zona": [5100.0, 5700.0],
     })
 
-    modelo = Ridge()
+    modelo = make_pipeline(
+        ColumnTransformer(
+            [("numericas", "passthrough", ["Metragem", "Quartos"])]
+        ),
+        Ridge(),
+    )
     modelo.fit(df_com_indesejados[["Metragem", "Quartos"]], [300000.0, 480000.0])
+    motor = MotorImobiliario(
+        AgregadorHierarquico(minima_zona=1, minima_bairro=1).calcular_estatisticas(
+            base_exemplo
+        )
+    )
 
     tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
     observador = ObservadorMlflow(
@@ -274,6 +352,7 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
         estimador=modelo,
         explicacoes_parametros=(),
         dados_exemplo=df_com_indesejados,
+        motor_imobiliario=motor,
     )
     observador.ao_concluir_treino_final(evento)
 
@@ -304,6 +383,14 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
     # Validar que os resultados da regra de negócio foram acrescentados no OUTPUT
     assert "valor_previsto" in nomes_outputs
     assert "valor_m2_previsto" in nomes_outputs
+    assert "valor_previsto_medio_zona" in nomes_outputs
+    assert "valor_previsto_medio_bairro" in nomes_outputs
+    assert "valor_previsto_zona" in nomes_outputs
+    assert "valor_previsto_bairro" in nomes_outputs
+    assert "valor_m2_previsto_zona" in nomes_outputs
+    assert "valor_m2_previsto_bairro" in nomes_outputs
+    assert "Zona" in nomes_outputs
+    assert "Bairro" in nomes_outputs
     assert "indice_imovel_global" in nomes_outputs
     assert "indice_imovel_zona" in nomes_outputs
     assert "indice_imovel_bairro" in nomes_outputs
@@ -325,8 +412,6 @@ def test_remocao_parametros_indesejados_api_mlflow(tmp_path: Path, monkeypatch: 
     assert "bairro_desconto_15" in nomes_outputs
     assert "bairro_faixa_segura_piso" in nomes_outputs
     assert "bairro_faixa_segura_teto" in nomes_outputs
-
-
 
 
 

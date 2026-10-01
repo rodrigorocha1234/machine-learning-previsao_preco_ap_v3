@@ -1,5 +1,7 @@
 from typing import Final
 
+from app_build.observabilidade_metricas.persistencia_metricas import PersistenciaMetricas
+
 from prometheus_client import start_http_server
 
 from app_build.observabilidade_metricas.coletor_prometheus import ColetorPrometheus
@@ -9,6 +11,7 @@ class ServicoTelemetria:
     def __init__(
         self, porta: int = 8000, coletor: ColetorPrometheus | None = None
     ) -> None:
+        self._persistencia = PersistenciaMetricas()
         self._porta: Final[int] = porta
         self._coletor: Final[ColetorPrometheus] = coletor or ColetorPrometheus()
 
@@ -17,6 +20,9 @@ class ServicoTelemetria:
             start_http_server(self._porta)
         except OSError:
             pass
+
+    def salvar_metricas(self) -> None:
+        self._persistencia.salvar()
 
     @property
     def coletor(self) -> ColetorPrometheus:

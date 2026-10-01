@@ -1,3 +1,5 @@
+from dataclasses import fields
+
 import numpy as np
 from sklearn.metrics import (
     mean_absolute_error,
@@ -57,3 +59,15 @@ class AcumuladorMetricas:
             rmse_relativo=float(np.median([m.rmse_relativo for m in metricas_lista])),
             mape=float(np.median([m.mape for m in metricas_lista])),
         )
+
+    @staticmethod
+    def agregar_desvios_padrao(
+        metricas_lista: tuple[MetricasRegressao, ...],
+    ) -> MetricasRegressao:
+        """Dispersão descritiva entre folds externos, com ddof=0."""
+        nomes = tuple(campo.name for campo in fields(MetricasRegressao))
+        matriz = np.stack(
+            [[getattr(metricas, nome) for nome in nomes] for metricas in metricas_lista]
+        )
+        desvios = np.std(matriz, axis=0, ddof=0)
+        return MetricasRegressao(**dict(zip(nomes, map(float, desvios))))

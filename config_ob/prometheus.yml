@@ -18,4 +18,9 @@ scrape_configs:
   - job_name: "ml_service"
     scrape_interval: 5s
     static_configs:
-      - targets: ["172.20.0.1:8000"]
+      - targets: ["metricas-treino:8000"]
+
+  - job_name: "mlflow_serving"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["mlflow-serving:8080"]

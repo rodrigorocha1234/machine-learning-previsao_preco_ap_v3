@@ -38,3 +38,9 @@
 - **Contexto:** Requisito de negócio exigindo que as métricas imobiliárias e a suficiência amostral sejam sempre computadas e avaliadas nessa ordem exata.
 - **Decisão:** O cálculo é feito por um agregador hierárquico com padrão *Specification*. Se a amostragem do Bairro for inferior a 20, o objeto de resultado automaticamente delega o cálculo das faixas de segurança para as estatísticas da Zona; se a Zona for inferior a 30, delega para o Global.
 - **Consequência:** Atendimento estrito à regra de negócio imobiliária sem uso de condicionais aninhadas no código de aplicação.
+
+## Telemetria HTTP do serving nativo MLflow
+
+O módulo `servidor_inferencia` carrega uma versão fixa resolvida pelo alias `champion` e usa `mlflow.pyfunc.scoring_server.init` para manter o contrato e a validação oficiais do MLflow. `AdaptadorServing` envolve essa aplicação ASGI somente para instrumentação e exposição de `/metrics`. Os `if` deste adaptador tratam mensagens ASGI, códigos HTTP e formatos JSON externos; não selecionam regras de negócio. O servidor usa um único worker: a coleta em memória não deve ser usada com múltiplos workers sem implementar agregação multiprocess.
+
+A coleta de distribuições agrega vetorialmente por localidade. Labels geográficas aceitam somente nomes presentes nas referências do modelo; entradas desconhecidas são agrupadas em `DESCONHECIDA`/`DESCONHECIDO`. Não há identificadores de imóveis nem preços em labels.

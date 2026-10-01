@@ -1,5 +1,5 @@
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Final
 
 from app_build.observabilidade_metricas.coletor_prometheus import ColetorPrometheus
@@ -36,6 +36,7 @@ class ExecutorEsteira:
         etapas: Sequence[ContratoEtapa] | None = None,
         emissor_logs: EmissorLogs | None = None,
         coletor: ColetorPrometheus | None = None,
+        persistir_metricas: Callable[[], None] | None = None,
     ) -> None:
         padrao_etapas: Final[tuple[ContratoEtapa, ...]] = (
             Etapa01CarregarConfiguracoes(),
@@ -62,6 +63,7 @@ class ExecutorEsteira:
         self._etapas: Final[tuple[ContratoEtapa, ...]] = tuple(etapas or padrao_etapas)
         self._emissor: Final[EmissorLogs] = emissor_logs or EmissorLogs()
         self._coletor: Final[ColetorPrometheus | None] = coletor
+        self._persistir_metricas = persistir_metricas or (lambda: None)
 
     def executar_esteira(
         self, contexto: ContextoExecucao | None = None
@@ -84,6 +86,7 @@ class ExecutorEsteira:
                     nome_etapa=etapa.nome_etapa, indice=indice, total=total_etapas
                 )
 
+            self._persistir_metricas()
             ts_inicio = time.perf_counter()
             sucesso = True
             try:
@@ -113,5 +116,6 @@ class ExecutorEsteira:
                         duracao_segundos=duracao,
                         sucesso=sucesso,
                     )
+                self._persistir_metricas()
 
         return ctx

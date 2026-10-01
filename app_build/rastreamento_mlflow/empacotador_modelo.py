@@ -92,12 +92,36 @@ class EmpacotadorModelo(PythonModel):
         df_enriquecido = self.motor_imobiliario.enriquecer_dataframe(
             df_entrada, vetor_prev
         )
+        valor_previsto_zona = df_enriquecido.groupby("Zona")[
+            "valor_previsto"
+        ].transform("mean")
+        valor_previsto_bairro = df_enriquecido.groupby(
+            ["Zona", "Bairro"]
+        )["valor_previsto"].transform("mean")
+        df_enriquecido = df_enriquecido.assign(
+            valor_m2_previsto_zona=df_enriquecido.groupby("Zona")[
+                "valor_m2_previsto"
+            ].transform("mean"),
+            valor_m2_previsto_bairro=df_enriquecido.groupby(
+                ["Zona", "Bairro"]
+            )["valor_m2_previsto"].transform("mean"),
+            valor_previsto_zona=valor_previsto_zona,
+            valor_previsto_bairro=valor_previsto_bairro,
+            valor_previsto_medio_zona=valor_previsto_zona,
+            valor_previsto_medio_bairro=valor_previsto_bairro,
+        )
         # Colunas de saída organizadas por hierarquia: GLOBAL → ZONA → BAIRRO
         colunas_resultado: tuple[str, ...] = (
+            # Identificação do imóvel avaliado
+            "Zona",
+            "Bairro",
             # Previsão base
             "valor_previsto",
             "valor_m2_previsto",
-            # Nível Global
+            # ── Nível Global ──────────────────────────────────────────────────
+            "global_mediana_mercado",
+            "global_media_mercado",
+            "global_mediana_m2_mercado",
             "indice_imovel_global",
             "diferenca_perc_global",
             "global_desconto_5",
@@ -105,7 +129,10 @@ class EmpacotadorModelo(PythonModel):
             "global_desconto_15",
             "global_faixa_segura_piso",
             "global_faixa_segura_teto",
-            # Nível Zona
+            # ── Nível Zona ────────────────────────────────────────────────────
+            "zona_mediana_mercado",
+            "zona_media_mercado",
+            "zona_mediana_m2_mercado",
             "indice_imovel_zona",
             "diferenca_perc_zona",
             "zona_desconto_5",
@@ -113,7 +140,10 @@ class EmpacotadorModelo(PythonModel):
             "zona_desconto_15",
             "zona_faixa_segura_piso",
             "zona_faixa_segura_teto",
-            # Nível Bairro
+            # ── Nível Bairro ──────────────────────────────────────────────────
+            "bairro_mediana_mercado",
+            "bairro_media_mercado",
+            "bairro_mediana_m2_mercado",
             "indice_imovel_bairro",
             "diferenca_perc_bairro",
             "bairro_desconto_5",
@@ -121,5 +151,12 @@ class EmpacotadorModelo(PythonModel):
             "bairro_desconto_15",
             "bairro_faixa_segura_piso",
             "bairro_faixa_segura_teto",
+            # Médias batch das previsões por localização
+            "valor_previsto_zona",
+            "valor_previsto_bairro",
+            "valor_m2_previsto_zona",
+            "valor_m2_previsto_bairro",
+            "valor_previsto_medio_zona",
+            "valor_previsto_medio_bairro",
         )
         return df_enriquecido[list(colunas_resultado)]

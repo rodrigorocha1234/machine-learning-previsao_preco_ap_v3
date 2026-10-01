@@ -1,1 +1,5593 @@
-null
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "liveNow": false,
+  "panels": [
+    {
+      "id": 1001,
+      "title": "Serving — tráfego real e saúde da API",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 1002,
+      "title": "Como ler este dashboard",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 4
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Serving:** coleta real em `/metrics`, por requisição e por imóvel. Métricas começam na ativação e reiniciam com o processo. Sem tráfego, médias e quantis ficam sem dados. **Treino/holdout:** fonte separada `ml_service`; não são erros observados em produção. O script `servico_monitor_drift.py` gera simulações e não deve alimentar a fonte de produção. Painéis indisponíveis não significam valor zero."
+      }
+    },
+    {
+      "id": 1003,
+      "title": "Disponibilidade do serving",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Sucesso do scrape HTTP da aplicação MLflow. Não é um teste completo da inferência.",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"mlflow_serving\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1004,
+      "title": "Requisições por minuto",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Apenas /invocations; exclui healthchecks e scrapes.",
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqpm",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "60 * sum(rate(apartamentos_serving_requisicoes_total{job=\"mlflow_serving\"}[$__rate_interval]))",
+          "legendFormat": "__auto",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1005,
+      "title": "Erros HTTP (%)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "4xx e 5xx divididos por todas as requisições.",
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum(rate(apartamentos_serving_requisicoes_total{job=\"mlflow_serving\",status=~\"4xx|5xx\"}[$__rate_interval])) / sum(rate(apartamentos_serving_requisicoes_total{job=\"mlflow_serving\"}[$__rate_interval]))",
+          "legendFormat": "__auto",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1006,
+      "title": "Latência HTTP p50 / p95 / p99",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Tempo completo da chamada MLflow; quantis aproximados por histograma.",
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(apartamentos_serving_latencia_segundos_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(apartamentos_serving_latencia_segundos_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(apartamentos_serving_latencia_segundos_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p99",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1007,
+      "title": "Tamanho médio / p95 dos lotes",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Entradas JSON dataframe_records e dataframe_split, inclusive rejeitadas.",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(apartamentos_serving_lote_imoveis_sum{job=\"mlflow_serving\"}[$__rate_interval])) / sum(rate(apartamentos_serving_lote_imoveis_count{job=\"mlflow_serving\"}[$__rate_interval]))",
+          "legendFormat": "Média",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(.95, sum by (le) (rate(apartamentos_serving_lote_imoveis_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1008,
+      "title": "Falhas de coleta da telemetria",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Falhas ao interpretar entrada ou saída. A resposta da API não é alterada.",
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(apartamentos_serving_telemetria_falhas_total{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1009,
+      "title": "Entradas — qualidade e categorias desconhecidas",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 1010,
+      "title": "Campos ausentes",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Ocorrências por campo nos imóveis enviados em JSON.",
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (campo) (increase(apartamentos_serving_entrada_problemas_total{job=\"mlflow_serving\",motivo=\"ausente\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1011,
+      "title": "Metragem inválida",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Área não numérica, não finita ou menor/igual a zero.",
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(apartamentos_serving_entrada_problemas_total{job=\"mlflow_serving\",motivo=\"invalida\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1012,
+      "title": "Categorias desconhecidas por campo (%)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Comparação com as localidades conhecidas do modelo carregado.",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (campo) (rate(apartamentos_serving_entrada_problemas_total{job=\"mlflow_serving\",motivo=\"desconhecida\"}[$__rate_interval])) / scalar(sum(rate(apartamentos_serving_entradas_total{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "__auto",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1013,
+      "title": "Referência usada: bairro / zona / global (%)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Disponibilidade das referências no enriquecimento vetorizado atual. Não afirma suficiência estatística; o caminho vetorizado faz fallback por ausência da localidade.",
+      "gridPos": {
+        "x": 12,
+        "y": 38,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (nivel) (rate(apartamentos_serving_referencia_total{job=\"mlflow_serving\"}[$__rate_interval])) / scalar(sum(rate(apartamentos_serving_referencia_total{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "__auto",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1014,
+      "title": "Previsões — cada imóvel atendido, com volume de amostra",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 46,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 1015,
+      "title": "Imóveis previstos no período",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Contagem de previsões válidas, não de requisições. Increase é uma estimativa e pode ser fracionário.",
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1016,
+      "title": "Preço médio / mediano previsto",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Média ponderada por imóvel; mediana aproximada pelos buckets.",
+      "gridPos": {
+        "x": 12,
+        "y": 47,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(apartamentos_serving_valor_sum{job=\"mlflow_serving\"}[$__rate_interval])) / sum(rate(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__rate_interval]))",
+          "legendFormat": "Média",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(.5, sum by (le) (rate(apartamentos_serving_valor_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "Mediana aproximada",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1017,
+      "title": "Preço previsto p10 / p50 / p90",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Distribuição aproximada no intervalo de cálculo.",
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.1, sum by (le) (rate(apartamentos_serving_valor_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p10",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(apartamentos_serving_valor_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.9, sum by (le) (rate(apartamentos_serving_valor_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "p90",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1018,
+      "title": "R$/m² médio / mediano",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Média dos preços por m² individuais; unidade R$/m².",
+      "gridPos": {
+        "x": 12,
+        "y": 55,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(apartamentos_serving_valor_m2_sum{job=\"mlflow_serving\"}[$__rate_interval])) / sum(rate(apartamentos_serving_valor_m2_count{job=\"mlflow_serving\"}[$__rate_interval]))",
+          "legendFormat": "Média",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(.5, sum by (le) (rate(apartamentos_serving_valor_m2_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "legendFormat": "Mediana aproximada",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1019,
+      "title": "Preço médio previsto por Zona",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Soma dos preços de todos os imóveis / quantidade no período selecionado.",
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona) (increase(apartamentos_serving_valor_sum{job=\"mlflow_serving\"}[$__range])) / sum by (zona) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1020,
+      "title": "Imóveis previstos por Zona",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Use esta contagem para interpretar a representatividade das médias.",
+      "gridPos": {
+        "x": 12,
+        "y": 63,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1021,
+      "title": "R$/m² previsto por Zona",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Média por imóvel no período; R$/m².",
+      "gridPos": {
+        "x": 0,
+        "y": 71,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona) (increase(apartamentos_serving_valor_m2_sum{job=\"mlflow_serving\"}[$__range])) / sum by (zona) (increase(apartamentos_serving_valor_m2_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1022,
+      "title": "Participação no tráfego por Zona",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Percentual dos imóveis previstos no período.",
+      "gridPos": {
+        "x": 12,
+        "y": 71,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (zona) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range])) / scalar(sum(increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range])))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1023,
+      "title": "Preço médio previsto por Zona e Bairro",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Soma dos preços de todos os imóveis / quantidade no período selecionado.",
+      "gridPos": {
+        "x": 0,
+        "y": 79,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona, bairro) (increase(apartamentos_serving_valor_sum{job=\"mlflow_serving\"}[$__range])) / sum by (zona, bairro) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1024,
+      "title": "Imóveis previstos por Zona e Bairro",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Use esta contagem para interpretar a representatividade das médias.",
+      "gridPos": {
+        "x": 12,
+        "y": 79,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona, bairro) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1025,
+      "title": "R$/m² previsto por Zona e Bairro",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Média por imóvel no período; R$/m².",
+      "gridPos": {
+        "x": 0,
+        "y": 87,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona, bairro) (increase(apartamentos_serving_valor_m2_sum{job=\"mlflow_serving\"}[$__range])) / sum by (zona, bairro) (increase(apartamentos_serving_valor_m2_count{job=\"mlflow_serving\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1026,
+      "title": "Participação no tráfego por Zona e Bairro",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Percentual dos imóveis previstos no período.",
+      "gridPos": {
+        "x": 12,
+        "y": 87,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (zona, bairro) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range])) / scalar(sum(increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range])))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1027,
+      "title": "Modelo carregado — identificação e idade",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 95,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 1028,
+      "title": "Versão efetivamente carregada",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Versão fixada ao iniciar o serviço, nome, run e alias usado na carga.",
+      "gridPos": {
+        "x": 0,
+        "y": 96,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_serving_modelo_info{job=\"mlflow_serving\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1029,
+      "title": "Tempo desde o treino / registro / carga",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Treino: fim do run associado (ou início se ainda aberto). Registro: criação da versão. Carga: inicialização deste processo.",
+      "gridPos": {
+        "x": 12,
+        "y": 96,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - apartamentos_serving_treinado_timestamp{job=\"mlflow_serving\"}",
+          "legendFormat": "Desde treino",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "time() - apartamentos_serving_registrado_timestamp{job=\"mlflow_serving\"}",
+          "legendFormat": "Desde registro",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "time() - apartamentos_serving_carregado_timestamp{job=\"mlflow_serving\"}",
+          "legendFormat": "Desde carga",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1030,
+      "title": "Qualidade e drift — disponibilidade das fontes",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 104,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 1031,
+      "title": "Erros em produção e drift real: fontes ainda necessárias",
+      "type": "text",
+      "gridPos": {
+        "x": 0,
+        "y": 105,
+        "w": 24,
+        "h": 4
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**MAE, RMSE e viés em produção:** indisponíveis até integrar valores reais de venda associados às previsões. **PSI de produção:** exige uma distribuição de referência versionada e janela de entradas reais; não há esse fluxo integrado neste projeto. Os painéis legados de drift abaixo recebem apenas a fonte `ml_service`, que pode conter demonstrações. Não use esses valores como evidência de drift de produção. **Referência por suficiência amostral:** a inferência vetorizada atual não aplica os limites de suficiência; o painel mede somente fallback por localidade ausente."
+      }
+    },
+    {
+      "id": 1032,
+      "title": "Disponibilidade do exportador de treino",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Exportador na porta 8000. Sem ele os painéis de treino e holdout não recebem dados.",
+      "gridPos": {
+        "x": 0,
+        "y": 109,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1033,
+      "title": "Tempo desde última execução do pipeline",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Última conclusão registrada pelo pipeline.",
+      "gridPos": {
+        "x": 12,
+        "y": 109,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time() - apartamentos_pipeline_ultima_execucao_timestamp{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": false,
+          "format": "time_series",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 1034,
+      "title": "Holdout: MAE por Zona",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Avaliação de teste final, não erro em produção.",
+      "gridPos": {
+        "x": 0,
+        "y": 117,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_holdout_mae_zona{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1035,
+      "title": "Holdout: RMSE por Zona / Bairro",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Avaliação de teste final.",
+      "gridPos": {
+        "x": 12,
+        "y": 117,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_holdout_rmse_bairro{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1036,
+      "title": "Nested CV: RMSE médio por modelo",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Resultados externos da validação cruzada.",
+      "gridPos": {
+        "x": 0,
+        "y": 125,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_rmse_medio{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1037,
+      "title": "Nested CV: dispersão do RMSE",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Desvio padrão entre folds externos.",
+      "gridPos": {
+        "x": 12,
+        "y": 125,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_rmse_std{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1038,
+      "title": "Treino: ausentes por coluna (%)",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Diagnóstico da base carregada pelo pipeline.",
+      "gridPos": {
+        "x": 0,
+        "y": 133,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_dados_missing_percentual{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1039,
+      "title": "Treino: outliers por coluna (%)",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Outliers pelo IQR; não são erros da API.",
+      "gridPos": {
+        "x": 12,
+        "y": 133,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Sem dados",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_dados_outliers_percentual{job=\"ml_service\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 1040,
+      "title": "Painéis existentes — treino, holdout, diagnóstico e logs",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 141,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 142
+      },
+      "id": 445,
+      "title": "Visão Geral Executiva — Previsão Imobiliária (Ribeirão Preto/SP)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 143
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(apartamentos_serving_valor_count{job=\"mlflow_serving\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "title": "Total de Predições Realizadas",
+      "type": "stat",
+      "description": "Imóveis previstos desde o início do processo instrumentado."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 143
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_rmse",
+          "refId": "A"
+        }
+      ],
+      "title": "Holdout — RMSE do Modelo Campeão",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 143
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_mae",
+          "refId": "A"
+        }
+      ],
+      "title": "Holdout — MAE do Modelo Campeão",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 143
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_r2",
+          "refId": "A"
+        }
+      ],
+      "title": "Holdout — R² de Aderência",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 147
+      },
+      "id": 446,
+      "title": "Desempenho Hierárquico por Zona e Telemetria",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 148
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (zona) (increase(apartamentos_serving_valor_sum{job=\"mlflow_serving\"}[$__range])) / sum by (zona) (increase(apartamentos_serving_valor_count{job=\"mlflow_serving\"}[$__range]))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "title": "Serving — preço médio por zona no período",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 148
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(.95, sum by (le) (rate(apartamentos_serving_latencia_segundos_bucket{job=\"mlflow_serving\"}[$__rate_interval])))",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "title": "Latência de Inferência (Serving)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 156
+      },
+      "id": 447,
+      "title": "Observabilidade Contínua de Data Drift & Prediction Drift (MLOps)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "#73BF69",
+                  "index": 0,
+                  "text": "ESTÁVEL"
+                },
+                "1": {
+                  "color": "#FF9830",
+                  "index": 1,
+                  "text": "MODERADO"
+                },
+                "2": {
+                  "color": "#F2495C",
+                  "index": 2,
+                  "text": "CRÍTICO"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": 0
+              },
+              {
+                "color": "#FF9830",
+                "value": 1
+              },
+              {
+                "color": "#F2495C",
+                "value": 2
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 157
+      },
+      "id": 301,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_status_geral",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — Status Geral de Drift",
+      "type": "stat",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": 0
+              },
+              {
+                "color": "#FF9830",
+                "value": 0.1
+              },
+              {
+                "color": "#F2495C",
+                "value": 0.2
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 4,
+        "y": 157
+      },
+      "id": 302,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_psi_predicoes",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — PSI Predições (Prediction Drift)",
+      "type": "stat",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": 0
+              },
+              {
+                "color": "#FF9830",
+                "value": 0.1
+              },
+              {
+                "color": "#F2495C",
+                "value": 0.2
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 9,
+        "y": 157
+      },
+      "id": 303,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_psi_area",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — PSI Entrada (Metragem / Área m²)",
+      "type": "stat",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": 0
+              },
+              {
+                "color": "#73BF69",
+                "value": 0.05
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 14,
+        "y": 157
+      },
+      "id": 304,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_ks_area_pvalor",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — KS Test P-Valor (Metragem)",
+      "type": "stat",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": 0
+              },
+              {
+                "color": "#FF9830",
+                "value": 0.1
+              },
+              {
+                "color": "#F2495C",
+                "value": 0.25
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 19,
+        "y": 157
+      },
+      "id": 305,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_wasserstein_area",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — Distância Wasserstein (Metragem)",
+      "type": "stat",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Valor do PSI",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.2
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 161
+      },
+      "id": 306,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "descending"
+        }
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_psi_features",
+          "legendFormat": "{{feature}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — Evolução do PSI por Feature e Predições (Limiares: 0.10 Alerta | 0.20 Crítico)",
+      "type": "timeseries",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": true,
+            "axisColorMode": "text",
+            "axisLabel": "Desvio Relativo (%)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 161
+      },
+      "id": 307,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "apartamentos_drift_desvio_preco_m2_zona",
+          "legendFormat": "{{zona}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Diagnóstico ml_service — Desvio de Preço Médio por m² por Zona Territorial (%)",
+      "type": "timeseries",
+      "description": "Não é drift integrado ao serving. O script de demonstração publica dados simulados nesta fonte."
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 169
+      },
+      "id": 448,
+      "title": "Resultados dos Testes Estatísticos Rigorosos de Modelos (Friedman, Nemenyi & Shapiro-Wilk)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Estatística qui-quadrado de Friedman com k-1 graus de liberdade (15 folds)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#3274D9",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3274D9",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 170
+      },
+      "id": 401,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_estatistica_friedman_chi2",
+          "legendFormat": "χ²_F",
+          "refId": "A"
+        }
+      ],
+      "title": "Friedman Qui-Quadrado (χ²_F)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "P-valor sob a hipótese nula H0. Se p < 0.05, comprova superioridade estatística entre modelos",
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 170
+      },
+      "id": 402,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_estatistica_friedman_pvalor",
+          "legendFormat": "p-valor",
+          "refId": "A"
+        }
+      ],
+      "title": "Friedman P-Valor (Significância)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Limiar crítico de diferença de rank no teste post-hoc de Nemenyi (α = 0.05)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#FF9900",
+            "mode": "fixed"
+          },
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#FF9900",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 170
+      },
+      "id": 403,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_estatistica_nemenyi_cd",
+          "legendFormat": "CD",
+          "refId": "A"
+        }
+      ],
+      "title": "Diferença Crítica Nemenyi (CD)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Rejeição de normalidade (p < 1e-60) comprova matematicamente necessidade de testes não paramétricos",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "#8F3BB8",
+                  "text": "Não Gaussiano (Rejeita H0)"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Gaussiano"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#8F3BB8",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 170
+      },
+      "id": 404,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(apartamentos_estatistica_shapiro_eh_normal)",
+          "legendFormat": "Normalidade",
+          "refId": "A"
+        }
+      ],
+      "title": "Normalidade Shapiro-Wilk (Resíduos)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Ranking nos 15 folds externos da validação cruzada aninhada. Menor rank indica menor erro sistemático",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 12,
+        "x": 0,
+        "y": 174
+      },
+      "id": 405,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.9,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_estatistica_rank_medio_modelo",
+          "legendFormat": "{{modelo}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Ranks Médios de Friedman por Modelo (Menor = Melhor)",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Diferença absoluta de ranks (|ΔR|). Barras acima do limiar CD (0.8555) indicam superioridade comprovada",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 85,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 0.8555
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 15,
+        "w": 12,
+        "x": 12,
+        "y": 174
+      },
+      "id": 406,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.9,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_estatistica_nemenyi_dif_ranks",
+          "legendFormat": "{{modelo_a}} vs {{modelo_b}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Comparações Pareadas Post-Hoc de Nemenyi vs Limiar CD (0.8555)",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 189
+      },
+      "id": 449,
+      "title": "Logs Estruturados do Sistema (Loki) — Níveis: DEBUG, INFO, WARNING, ERROR, CRITICAL & FATAL",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#73BF69",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 0,
+        "y": 190
+      },
+      "id": 201,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(debug|trace)\" [$__range]))",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Logs DEBUG / TRACE",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#5794F2",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#5794F2",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 4,
+        "y": 190
+      },
+      "id": 202,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(info|notice)\" [$__range]))",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Logs INFO / NOTICE",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#FF9830",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#FF9830",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 9,
+        "y": 190
+      },
+      "id": 203,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(warn|warning)\" [$__range]))",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Logs WARNING / WARN",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#F2495C",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#F2495C",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 14,
+        "y": 190
+      },
+      "id": 204,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(error|err|falha)\" [$__range]))",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Logs ERROR / ERR",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#E02F44",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#E02F44",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 5,
+        "x": 19,
+        "y": 190
+      },
+      "id": 205,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(critical|crit|fatal|panic|emerg)\" [$__range]))",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Logs CRITICAL / FATAL",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Volume de Mensagens",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 85,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "DEBUG / TRACE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "INFO / NOTICE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#5794F2",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "WARNING / WARN"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ERROR / ERR"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#F2495C",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CRITICAL / FATAL"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#E02F44",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 193
+      },
+      "id": 206,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "descending"
+        }
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(debug|trace)\" [$__interval]))",
+          "legendFormat": "DEBUG / TRACE",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(info|notice)\" [$__interval]))",
+          "legendFormat": "INFO / NOTICE",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(warn|warning)\" [$__interval]))",
+          "legendFormat": "WARNING / WARN",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(error|err|falha)\" [$__interval]))",
+          "legendFormat": "ERROR / ERR",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=~\"$container\"} |~ \"(?i)(critical|crit|fatal|panic|emerg)\" [$__interval]))",
+          "legendFormat": "CRITICAL / FATAL",
+          "refId": "E"
+        }
+      ],
+      "title": "Distribuição Temporal de Logs por Severidade (Empilhado)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 193
+      },
+      "id": 207,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showControls": false,
+        "showFieldSelector": false,
+        "showLabels": true,
+        "showLevel": true,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "timestampResolution": "ms",
+        "unwrappedColumns": false,
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{container=~\"$container\"} |~ \"(?i)(warn|warning|error|err|critical|crit|fatal|panic|emerg|falha)\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Alertas, Falhas e Eventos Críticos (WARN, ERROR, CRITICAL, FATAL)",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Concluídas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Iniciadas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#5794F2",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 201
+      },
+      "id": 414,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.3,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": true
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": false,
+        "sizing": "auto",
+        "sparkline": true,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=\"executor_esteira\"} |= \">>> Executando etapa\" [$__interval]))",
+          "legendFormat": "Iniciadas",
+          "queryType": "range",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "direction": "backward",
+          "editorMode": "code",
+          "expr": "sum(count_over_time({container=\"executor_esteira\"} |= \"--- Concluida etapa\" [$__interval]))",
+          "legendFormat": "Concluídas",
+          "queryType": "range",
+          "refId": "B"
+        }
+      ],
+      "title": "Evolução Temporal — Etapas Iniciadas vs. Concluídas",
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 209
+      },
+      "id": 450,
+      "title": "🔄 Andamento do Pipeline — Etapas em Tempo Real",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 210
+      },
+      "id": 411,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(count_over_time({container=\"executor_esteira\"} |= \">>> Executando etapa\" [$__range]))",
+          "legendFormat": "Etapas Iniciadas",
+          "refId": "A"
+        }
+      ],
+      "title": "Etapas Iniciadas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 210
+      },
+      "id": 412,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(count_over_time({container=\"executor_esteira\"} |= \"--- Concluida etapa\" [$__range]))",
+          "legendFormat": "Etapas Concluídas",
+          "refId": "A"
+        }
+      ],
+      "title": "Etapas Concluídas",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 12,
+        "x": 12,
+        "y": 210
+      },
+      "id": 413,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {},
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum(count_over_time({container=\"executor_esteira\"} [$__range]))",
+          "legendFormat": "Total de logs",
+          "refId": "A"
+        }
+      ],
+      "title": "Atividade Recente do Pipeline",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Exibe em tempo real cada etapa iniciada (>>>) e concluída (---) pelo ExecutorEsteira, com timestamp e nível de log.",
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 214
+      },
+      "id": 415,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showControls": false,
+        "showFieldSelector": false,
+        "showLabels": false,
+        "showLevel": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "timestampResolution": "ms",
+        "unwrappedColumns": false,
+        "wrapLogMessage": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{container=\"executor_esteira\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "📋 Log Detalhado de Andamento do Pipeline (ExecutorEsteira)",
+      "type": "logs"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 228
+      },
+      "id": 451,
+      "title": "⚙️ Métricas de Pipeline — Duração e Status por Etapa",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1800
+              },
+              {
+                "color": "red",
+                "value": 3600
+              }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 229
+      },
+      "id": 421,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_pipeline_duracao_total_segundos",
+          "legendFormat": "Duração Total",
+          "refId": "A"
+        }
+      ],
+      "title": "⏱️ Duração Total do Pipeline",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 229
+      },
+      "id": 422,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_pipeline_execucoes_total",
+          "legendFormat": "Execuções",
+          "refId": "A"
+        }
+      ],
+      "title": "🔁 Total de Execuções do Pipeline",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 229
+      },
+      "id": 423,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_pipeline_etapas_concluidas_total",
+          "legendFormat": "Concluídas",
+          "refId": "A"
+        }
+      ],
+      "title": "✅ Etapas Concluídas (Acumulado)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 229
+      },
+      "id": 424,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_pipeline_etapas_falhas_total",
+          "legendFormat": "Falhas",
+          "refId": "A"
+        }
+      ],
+      "title": "❌ Etapas com Falha (Acumulado)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 233
+      },
+      "id": 425,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.5, sum by(etapa, le)(rate(apartamentos_pipeline_etapa_duracao_segundos_bucket[$__rate_interval])))",
+          "legendFormat": "p50 {{etapa}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by(etapa, le)(rate(apartamentos_pipeline_etapa_duracao_segundos_bucket[$__rate_interval])))",
+          "legendFormat": "p95 {{etapa}}",
+          "refId": "B"
+        }
+      ],
+      "title": "⏱️ Duração por Etapa do Pipeline (p50 vs p95)",
+      "type": "histogram"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 243
+      },
+      "id": 452,
+      "title": "🤖 Métricas Estendidas do Modelo Campeão",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 244
+      },
+      "id": 441,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_mape",
+          "legendFormat": "MAPE",
+          "refId": "A"
+        }
+      ],
+      "title": "Holdout — 📉 MAPE do Modelo Campeão (%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 244
+      },
+      "id": 442,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_total_amostras_treino",
+          "legendFormat": "Treino",
+          "refId": "A"
+        }
+      ],
+      "title": "🏋️ Amostras de Treino",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 244
+      },
+      "id": 443,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_total_amostras_holdout",
+          "legendFormat": "Holdout",
+          "refId": "A"
+        }
+      ],
+      "title": "🔒 Amostras de Holdout",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 0.7
+              },
+              {
+                "color": "green",
+                "value": 0.85
+              }
+            ]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 244
+      },
+      "id": 444,
+      "options": {
+        "barShape": "flat",
+        "barWidthFactor": 0.5,
+        "effects": {
+          "barGlow": false,
+          "centerGlow": false,
+          "gradient": false
+        },
+        "endpointMarker": "point",
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "segmentCount": 1,
+        "segmentSpacing": 0.3,
+        "shape": "gauge",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "sparkline": false,
+        "textMode": "auto"
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_modelo_r2",
+          "legendFormat": "R²",
+          "refId": "A"
+        }
+      ],
+      "title": "Holdout — 📊 R² do Modelo Campeão",
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 248
+      },
+      "id": 453,
+      "title": "🏠 Métricas de Negócio Hierárquico — Preços por Nível (Global / Zona / Bairro)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 249
+      },
+      "id": 431,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_negocio_preco_mediano_global",
+          "legendFormat": "Mediana Global",
+          "refId": "A"
+        }
+      ],
+      "title": "🌍 Preço Mediano Global (Ribeirão Preto/SP)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 249
+      },
+      "id": 432,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_negocio_preco_m2_mediano_global",
+          "legendFormat": "Mediana m²",
+          "refId": "A"
+        }
+      ],
+      "title": "📐 Preço Mediano m² Global (R$/m²)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 249
+      },
+      "id": 433,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_negocio_total_imoveis_dataset",
+          "legendFormat": "Imóveis",
+          "refId": "A"
+        }
+      ],
+      "title": "📊 Total de Imóveis no Dataset",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 253
+      },
+      "id": 434,
+      "options": {
+        "displayMode": "lcd",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_negocio_preco_mediano_zona",
+          "legendFormat": "{{zona}}",
+          "refId": "A"
+        }
+      ],
+      "title": "🗺️ Preço Mediano por Zona",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyBRL"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 253
+      },
+      "id": 435,
+      "options": {
+        "displayMode": "basic",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "13.2.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "apartamentos_negocio_preco_m2_mediano_zona",
+          "legendFormat": "{{zona}}",
+          "refId": "A"
+        }
+      ],
+      "title": "📐 Preço Mediano m² por Zona",
+      "type": "bargauge"
+    },
+    {
+      "id": 1041,
+      "title": "Validação cruzada — sensibilidade às divisões dos dados",
+      "type": "row",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 262,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 1042,
+      "title": "Nested CV: média e desvio padrão de RMSE",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "gridPos": {
+        "x": 0,
+        "y": 263,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 3,
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"rmse\"}",
+          "legendFormat": "Média",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"rmse\"}",
+          "legendFormat": "Desvio padrão",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "modelo",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job 1": true,
+              "job 2": true,
+              "metrica 1": true,
+              "metrica 2": true
+            },
+            "renameByName": {
+              "Value #A": "Média",
+              "Value #B": "Desvio padrão",
+              "Value 1": "Média",
+              "Value 2": "Desvio padrão"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1043,
+      "title": "Nested CV: média e desvio padrão de MAE",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "gridPos": {
+        "x": 12,
+        "y": 263,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyBRL",
+          "decimals": 3,
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"mae\"}",
+          "legendFormat": "Média",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"mae\"}",
+          "legendFormat": "Desvio padrão",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "modelo",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job 1": true,
+              "job 2": true,
+              "metrica 1": true,
+              "metrica 2": true
+            },
+            "renameByName": {
+              "Value #A": "Média",
+              "Value #B": "Desvio padrão",
+              "Value 1": "Média",
+              "Value 2": "Desvio padrão"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1044,
+      "title": "Nested CV: média e desvio padrão de MSE",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "gridPos": {
+        "x": 0,
+        "y": 271,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"mse\"}",
+          "legendFormat": "Média",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"mse\"}",
+          "legendFormat": "Desvio padrão",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "modelo",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job 1": true,
+              "job 2": true,
+              "metrica 1": true,
+              "metrica 2": true
+            },
+            "renameByName": {
+              "Value #A": "Média",
+              "Value #B": "Desvio padrão",
+              "Value 1": "Média",
+              "Value 2": "Desvio padrão"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1045,
+      "title": "Nested CV: média e desvio padrão de R2",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "gridPos": {
+        "x": 12,
+        "y": 271,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"r2\"}",
+          "legendFormat": "Média",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"r2\"}",
+          "legendFormat": "Desvio padrão",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "modelo",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job 1": true,
+              "job 2": true,
+              "metrica 1": true,
+              "metrica 2": true
+            },
+            "renameByName": {
+              "Value #A": "Média",
+              "Value #B": "Desvio padrão",
+              "Value 1": "Média",
+              "Value 2": "Desvio padrão"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1046,
+      "title": "Nested CV: média e desvio padrão de RMSE_RELATIVO",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "gridPos": {
+        "x": 0,
+        "y": 279,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 3,
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"rmse_relativo\"}",
+          "legendFormat": "Média",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"rmse_relativo\"}",
+          "legendFormat": "Desvio padrão",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "modelo",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job 1": true,
+              "job 2": true,
+              "metrica 1": true,
+              "metrica 2": true
+            },
+            "renameByName": {
+              "Value #A": "Média",
+              "Value #B": "Desvio padrão",
+              "Value 1": "Média",
+              "Value 2": "Desvio padrão"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1047,
+      "title": "Nested CV: média e desvio padrão de MAPE",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Dispersão entre folds externos (ddof=0). Menor desvio indica maior estabilidade nas divisões avaliadas. Não é erro padrão nem intervalo de confiança. MSE em R$²; MAPE e RMSE relativo armazenados como frações. Dados disponíveis após nova execução do pipeline e coleta do exportador ml_service.",
+      "gridPos": {
+        "x": 12,
+        "y": 279,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 3,
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "apartamentos_cv_media{job=\"ml_service\",metrica=\"mape\"}",
+          "legendFormat": "Média",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "expr": "apartamentos_cv_desvio_padrao{job=\"ml_service\",metrica=\"mape\"}",
+          "legendFormat": "Desvio padrão",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "modelo",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "instance 1": true,
+              "instance 2": true,
+              "job 1": true,
+              "job 2": true,
+              "metrica 1": true,
+              "metrica 2": true
+            },
+            "renameByName": {
+              "Value #A": "Média",
+              "Value #B": "Desvio padrão",
+              "Value 1": "Média",
+              "Value 2": "Desvio padrão"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "10s",
+  "schemaVersion": 42,
+  "tags": [
+    "mlops",
+    "imoveis",
+    "ribeirao_preto",
+    "loki",
+    "logging",
+    "drift"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".+",
+        "allowCustomValue": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "loki",
+          "uid": "loki"
+        },
+        "definition": "label_values(container)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Contêiner / Serviço",
+        "multi": false,
+        "name": "container",
+        "options": [],
+        "query": "label_values(container)",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".+",
+        "allowCustomValue": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": "Nível de Severidade",
+        "multi": false,
+        "name": "log_level",
+        "options": [],
+        "query": "Todos : .*, DEBUG : DEBUG|debug|TRACE|trace, INFO : INFO|info|NOTICE|notice, WARNING : WARN|warn|WARNING|warning, ERROR : ERROR|error|ERR|err|falha, CRITICAL : CRITICAL|critical|CRIT|crit|FATAL|fatal|panic|emerg",
+        "skipUrlSync": false,
+        "type": "custom",
+        "valuesFormat": "csv"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "timezone": "America/Sao_Paulo",
+  "title": "Previsão Imobiliária — Ribeirão Preto/SP",
+  "uid": "painel-previsao-imoveis",
+  "version": 19,
+  "description": "Operação real do MLflow Serving, previsões por localidade e resultados de treino separados."
+}

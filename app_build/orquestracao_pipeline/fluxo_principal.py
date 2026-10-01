@@ -16,6 +16,7 @@ class FluxoPrincipal:
         )
         self._executor = ExecutorEsteira(
             emissor_logs=self._emissor,
+            persistir_metricas=self._telemetria.salvar_metricas,
             coletor=self._telemetria.coletor,
         )
 
@@ -44,6 +45,8 @@ class FluxoPrincipal:
             total_etapas=20,
             etapas_com_falha=0,
         )
+
+        self._telemetria.salvar_metricas()
 
         msg_fim = (
             f"=== Pipeline Executado com Sucesso! "

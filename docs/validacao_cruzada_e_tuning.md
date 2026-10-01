@@ -242,6 +242,7 @@ Calculadas pelo `AcumuladorMetricas` para cada fold e depois agregadas:
 Métricas agregadas ao final dos 15 folds:
 - **Médias** (`metricas_medias`) — estimativa central
 - **Medianas** (`metricas_medianas`) — estimativa robusta
+- **Desvios padrão** (`metricas_desvios_padrao`) — dispersão de cada métrica entre os folds externos
 
 A **métrica principal** para ranking e seleção é o **RMSE** (`pipeline.yaml → avaliacao.metrica_principal`).
 
@@ -332,7 +333,7 @@ flowchart TD
     end
 
     F --> T[15 ResultadoFoldExterno por modelo]
-    T --> U[Agregar Medias e Medianas dos 15 folds]
+    T --> U[Agregar Medias, Medianas e Desvios Padrao dos 15 folds]
     U --> V[Etapa 11 — Friedman + Nemenyi + Shapiro-Wilk]
     V --> W[Etapa 12 — Selecao do Campeao por Rank]
     W --> X[Etapa 13 — Tuning Final em 100pct dev]
@@ -361,3 +362,22 @@ flowchart TD
 | [`ajuste_modelos/fabrica_estimadores.py`](../app_build/ajuste_modelos/fabrica_estimadores.py) | Catálogo de modelos disponíveis |
 | [`ajuste_modelos/fabrica_tuning.py`](../app_build/ajuste_modelos/fabrica_tuning.py) | Roteador de estratégias de tuning |
 | [`selecao_modelos/contrato_seletor.py`](../app_build/selecao_modelos/contrato_seletor.py) | Contrato do seletor de modelo campeão |
+
+
+## Sensibilidade às divisões dos dados
+
+Para cada modelo, calculamos o desvio padrão de **RMSE, MAE, MSE, R², RMSE relativo e MAPE** sobre os scores dos folds externos, após o tuning interno. Com a configuração 5 × 3, são 15 observações por métrica, com o mesmo peso para cada fold.
+
+A convenção é descritiva, `numpy.std(scores, ddof=0)`:
+
+`desvio = sqrt(sum((score_fold - media_scores)²) / quantidade_folds)`
+
+O resultado fica em `ResultadoNestedCv.metricas_desvios_padrao`. Não é o desvio dos resíduos nem das previsões individuais. Os folds repetidos compartilham dados e não são observações independentes: **média ± desvio padrão não representa intervalo de confiança**.
+
+Exemplo ilustrativo: dois modelos têm RMSE médio de R$ 50.000. Um apresenta desvio de R$ 3.000 e outro de R$ 15.000. O segundo varia mais conforme a divisão treino/validação. Compare sempre dispersão e erro médio juntos: um modelo consistentemente ruim também pode ter desvio baixo. Essa análise não mede diretamente a sensibilidade a cada atributo de entrada.
+
+No MLflow, o run pai `nested_cv_<modelo>` recebe `rmse_std`, `mae_std`, `mse_std`, `r2_std`, `rmse_relativo_std` e `mape_std`, além das médias, `desvio_padrao_ddof=0` e `total_folds_externos`. MAPE e RMSE relativo são armazenados como frações; 0,05 corresponde a 5 pontos percentuais de dispersão. RMSE/MAE usam R$, MSE usa R$² e R² é adimensional.
+
+No Prometheus, `apartamentos_cv_desvio_padrao{modelo,metrica}` e `apartamentos_cv_media{modelo,metrica}` alimentam os seis painéis de sensibilidade no dashboard geral do Grafana. A métrica existente `apartamentos_cv_rmse_std` usa o mesmo resultado centralizado. Os novos registros são preenchidos na próxima execução do pipeline; históricos não são recalculados automaticamente. Sem o exportador `ml_service` ativo, os painéis podem ficar sem dados.
+
+A política de seleção do campeão continua a mesma; o desvio padrão é um diagnóstico adicional, sem alterar automaticamente o ranking.

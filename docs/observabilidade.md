@@ -351,3 +351,49 @@ apartamentos_sistema_memoria_uso_mb
 | [`config_ob/prometheus.yml`](../config_ob/prometheus.yml) | Configuração de scrape do Prometheus |
 | [`config_ob/dashboards/`](../config_ob/dashboards/) | JSONs dos dashboards Grafana |
 | [`docker-compose.yaml`](../docker-compose.yaml) | Infraestrutura completa da stack de observabilidade |
+
+## Observabilidade real do MLflow Serving
+
+O dashboard **Previsão Imobiliária — Ribeirão Preto/SP**, UID `painel-previsao-imoveis`, inclui operação, entradas, previsões e identificação do modelo. Os painéis existentes de treino e logs foram preservados. O arquivo provisionado é `config_ob/dashboards/dashboard_geral_imobiliario.json`.
+
+### Coleta e interpretação
+
+O serving mantém os endpoints nativos do MLflow (`/invocations`, `/health`, `/ping`, `/version`) e acrescenta `/metrics`. O Prometheus coleta `mlflow-serving:8080` no job `mlflow_serving` a cada 5 segundos. Apenas `/invocations` incrementa os contadores de requisições e latência. O módulo de inicialização é `app_build.observabilidade_metricas.servidor_inferencia`, que utiliza a aplicação oficial do MLflow.
+
+| Métrica | Significado |
+| --- | --- |
+| `apartamentos_serving_requisicoes_total{status}` | Chamadas HTTP por classe 2xx/3xx/4xx/5xx |
+| `apartamentos_serving_latencia_segundos` | Histograma de duração HTTP; p50/p95/p99 |
+| `apartamentos_serving_lote_imoveis` | Histograma do tamanho dos lotes JSON reconhecidos |
+| `apartamentos_serving_entradas_total` | Imóveis recebidos em JSON, inclusive em chamadas rejeitadas |
+| `apartamentos_serving_entrada_problemas_total{campo,motivo}` | Ausentes, localidades desconhecidas e metragem inválida |
+| `apartamentos_serving_valor{zona,bairro}` | Histograma de preços previstos por imóvel (R$) |
+| `apartamentos_serving_valor_m2{zona,bairro}` | Histograma de preços previstos por m² (R$/m²) |
+| `apartamentos_serving_referencia_total{nivel}` | Uso de referência de bairro, zona ou global por disponibilidade |
+| `apartamentos_serving_modelo_info` | Nome, versão fixa carregada, run e alias usado na inicialização |
+| `apartamentos_serving_treinado_timestamp` | Fim do run associado, ou início se ainda estiver aberto |
+| `apartamentos_serving_registrado_timestamp` | Data de criação da versão no Registry; não é a data de mudança do alias |
+| `apartamentos_serving_carregado_timestamp` | Data de carga do modelo neste processo |
+| `apartamentos_serving_telemetria_falhas_total` | Falhas de interpretação da coleta, sem alteração da resposta |
+
+Histogramas expõem os sufixos `_bucket`, `_sum` e `_count`. A distribuição de preços usa buckets até R$ 5 milhões e a de preço por m² até R$ 25 mil, além de `+Inf`. Medianas e percentis são aproximações; valores acima do último limite finito reduzem a precisão dos quantis.
+
+As médias por zona/bairro usam **soma dos preços / número de imóveis**, com `increase` no período selecionado. Assim, lotes de tamanhos diferentes têm o peso correto. O volume por grupo aparece ao lado das médias. `increase` extrapola as amostras de scrape e pode produzir contagens fracionárias; não substitui um registro contábil de transações. Antes de dois scrapes ou sem tráfego, taxas, médias e quantis podem ficar sem dados. Contadores são reiniciados junto com o processo.
+
+Entradas são inspecionadas nos formatos `dataframe_records` e `dataframe_split`; outros formatos aceitos pelo MLflow mantêm o comportamento original, mas não alimentam os diagnósticos de campos/tamanho dos lotes. A contagem HTTP continua funcionando. Não são armazenados corpos de requisições nos logs ou nas métricas.
+
+### Fontes que ainda não estão disponíveis
+
+- **MAE, RMSE e viés em produção:** dependem de integrar o preço real da venda associado a cada previsão. As métricas `apartamentos_holdout_*` são avaliação offline e estão identificadas assim.
+- **PSI de produção:** exige baseline versionado e janela de dados reais. O script `scripts/servico_monitor_drift.py` usa dados simulados e valores fixos; não representa monitoramento real do serving. Os painéis legados de drift estão marcados como diagnóstico da fonte `ml_service`.
+- **Fallback por suficiência:** o enriquecimento vetorizado atual aplica fallback quando a localidade está ausente das referências. O painel de cobertura mede esse comportamento real, não uma decisão por tamanho mínimo de amostra.
+- **Treino/holdout:** dependem do exportador na porta 8000 (`ml_service`). Com esse processo parado, o indicador de disponibilidade fica em zero e os demais painéis podem ficar sem dados.
+
+### Aplicação das configurações
+
+```bash
+docker compose --profile servico_ml --profile serving up -d --no-deps mlflow-serving
+docker kill --signal=HUP prometheus
+```
+
+O Grafana lê o JSON provisionado automaticamente a cada 10 segundos. A versão do modelo é fixada na inicialização, evitando que a identificação apresentada diverja da versão carregada caso o alias seja alterado depois. Reinicie o serving para carregar uma nova versão. Mantenha um único worker neste modo de coleta em memória.

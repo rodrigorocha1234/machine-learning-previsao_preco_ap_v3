@@ -112,7 +112,6 @@ class Etapa04ValidarDados(ContratoEtapa):
             missing = {
                 col: float(df[col].isna().mean() * 100)
                 for col in df.columns
-                if df[col].isna().any()
             }
 
             # Outliers por coluna numérica (método IQR)
@@ -122,8 +121,7 @@ class Etapa04ValidarDados(ContratoEtapa):
                 q3 = float(df[col].quantile(0.75))
                 iqr = q3 - q1
                 n_out = int(((df[col] < q1 - 1.5 * iqr) | (df[col] > q3 + 1.5 * iqr)).sum())
-                if n_out > 0:
-                    outliers[col] = round(n_out / len(df) * 100, 2)
+                outliers[col] = round(n_out / len(df) * 100, 2)
 
             # Estatísticas do target
             alvo = df[target].dropna() if target in df.columns else df.iloc[:, -1]
@@ -333,7 +331,7 @@ class Etapa10NestedCv(ContratoEtapa):
             # ── CV por fold → Prometheus ───────────────────────────────────────
             if contexto.coletor is not None:
                 import numpy as np
-                rmse_folds: list[float] = []
+                contexto.coletor.registrar_dispersao_cv(resultado_cv)
                 for fold in resultado_cv.resultados_folds:
                     m = fold.metricas
                     contexto.coletor.registrar_resultado_fold_cv(
@@ -344,14 +342,13 @@ class Etapa10NestedCv(ContratoEtapa):
                         r2=m.r2,
                         mape=m.mape,
                     )
-                    rmse_folds.append(m.rmse)
 
                 tempos = [f.tempo_segundos for f in resultado_cv.resultados_folds]
                 contexto.coletor.registrar_resumo_cv_modelo(
                     modelo=nome_modelo,
                     rmse_medio=resultado_cv.metricas_medias.rmse,
                     r2_medio=resultado_cv.metricas_medias.r2,
-                    rmse_std=float(np.std(rmse_folds)),
+                    rmse_std=resultado_cv.metricas_desvios_padrao.rmse,
                     duracao_media_fold_s=float(np.mean(tempos)),
                 )
                 contexto.coletor.registrar_recursos_sistema()
@@ -607,12 +604,18 @@ class Etapa17AvaliacaoHoldout(ContratoEtapa):
                 contexto.coletor.registrar_holdout_zona(
                     zona=zona, rmse=m.rmse, mae=m.mae,
                     r2=m.r2, mape=m.mape, total_amostras=qtd,
+                    valor_medio_previsto=float(
+                        df_com_prev.loc[df_com_prev["Zona"] == zona, "previsao"].mean()
+                    ),
                 )
             for bairro, m in metricas_bairro.items():
                 zona_do_bairro = bairro_zona_map.get(bairro, "Desconhecida")
                 contexto.coletor.registrar_holdout_bairro(
                     bairro=bairro, zona=zona_do_bairro,
                     rmse=m.rmse, r2=m.r2,
+                    valor_medio_previsto=float(
+                        df_com_prev.loc[df_com_prev["Bairro"] == bairro, "previsao"].mean()
+                    ),
                 )
 
             # Distribuição dos resíduos e percentis do erro percentual

@@ -54,20 +54,22 @@ class ObservadorMlflow(ContratoObservador):
             with mlflow.start_run(run_name=f"nested_cv_{evento.nome_modelo}"):
                 mlflow.set_tag("etapa", "nested_cv")
                 mlflow.set_tag("modelo", evento.nome_modelo)
+                mlflow.log_param("desvio_padrao_ddof", 0)
+                mlflow.log_param("total_folds_externos", len(evento.resultado_cv.resultados_folds))
+                mlflow.log_metrics({
+                    f"{nome}_std": valor
+                    for nome, valor in asdict(evento.resultado_cv.metricas_desvios_padrao).items()
+                })
+                mlflow.log_metrics({
+                    f"{nome}_medio": valor
+                    for nome, valor in asdict(evento.resultado_cv.metricas_medias).items()
+                })
 
-                mlflow.log_metric(
-                    "rmse_medio", evento.resultado_cv.metricas_medias.rmse
-                )
                 mlflow.log_metric(
                     "rmse_mediano", evento.resultado_cv.metricas_medianas.rmse
                 )
-                mlflow.log_metric("mae_medio", evento.resultado_cv.metricas_medias.mae)
                 mlflow.log_metric(
                     "mae_mediano", evento.resultado_cv.metricas_medianas.mae
-                )
-                mlflow.log_metric("r2_medio", evento.resultado_cv.metricas_medias.r2)
-                mlflow.log_metric(
-                    "mape_medio", evento.resultado_cv.metricas_medias.mape
                 )
 
                 md_conteudo = self._explicador.gerar_markdown(

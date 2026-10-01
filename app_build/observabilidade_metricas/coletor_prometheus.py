@@ -1,9 +1,11 @@
 import time
+from dataclasses import asdict
 from typing import Final, override
 
 from prometheus_client import Counter, Gauge, Histogram, Info
 
 from app_build.observabilidade_metricas.contrato_telemetria import ContratoTelemetria
+from app_build.validacao_cruzada.contrato_validador import ResultadoNestedCv
 
 
 class ColetorPrometheus(ContratoTelemetria):
@@ -252,6 +254,16 @@ class ColetorPrometheus(ContratoTelemetria):
             "R2 medio dos folds externos por modelo",
             ["modelo"],
         )
+        self._gauge_cv_desvio_padrao: Final[Gauge] = Gauge(
+            "apartamentos_cv_desvio_padrao",
+            "Desvio padrao descritivo entre folds externos (ddof=0)",
+            ["modelo", "metrica"],
+        )
+        self._gauge_cv_media: Final[Gauge] = Gauge(
+            "apartamentos_cv_media",
+            "Media das metricas entre folds externos",
+            ["modelo", "metrica"],
+        )
         self._gauge_cv_rmse_std: Final[Gauge] = Gauge(
             "apartamentos_cv_rmse_std",
             "Desvio padrao do RMSE entre os folds externos por modelo",
@@ -284,6 +296,11 @@ class ColetorPrometheus(ContratoTelemetria):
             "MAPE do holdout por zona territorial (%)",
             ["zona"],
         )
+        self._gauge_holdout_valor_medio_previsto_zona: Final[Gauge] = Gauge(
+            "apartamentos_holdout_valor_medio_previsto_zona",
+            "Valor medio previsto pelo modelo no holdout por zona (R$)",
+            ["zona"],
+        )
         self._gauge_holdout_rmse_bairro: Final[Gauge] = Gauge(
             "apartamentos_holdout_rmse_bairro",
             "RMSE do holdout por bairro (R$)",
@@ -292,6 +309,11 @@ class ColetorPrometheus(ContratoTelemetria):
         self._gauge_holdout_r2_bairro: Final[Gauge] = Gauge(
             "apartamentos_holdout_r2_bairro",
             "R2 do holdout por bairro",
+            ["bairro", "zona"],
+        )
+        self._gauge_holdout_valor_medio_previsto_bairro: Final[Gauge] = Gauge(
+            "apartamentos_holdout_valor_medio_previsto_bairro",
+            "Valor medio previsto pelo modelo no holdout por bairro (R$)",
             ["bairro", "zona"],
         )
         self._gauge_holdout_amostras_zona: Final[Gauge] = Gauge(
@@ -580,6 +602,16 @@ class ColetorPrometheus(ContratoTelemetria):
         self._gauge_cv_mae_fold.labels(modelo=m, fold=f).set(mae)
         self._gauge_cv_mape_fold.labels(modelo=m, fold=f).set(mape)
 
+    def registrar_dispersao_cv(self, resultado: ResultadoNestedCv) -> None:
+        for metrica, desvio in asdict(resultado.metricas_desvios_padrao).items():
+            self._gauge_cv_desvio_padrao.labels(
+                modelo=resultado.nome_modelo, metrica=metrica
+            ).set(desvio)
+        for metrica, media in asdict(resultado.metricas_medias).items():
+            self._gauge_cv_media.labels(
+                modelo=resultado.nome_modelo, metrica=metrica
+            ).set(media)
+
     def registrar_resumo_cv_modelo(
         self,
         modelo: str,
@@ -605,6 +637,7 @@ class ColetorPrometheus(ContratoTelemetria):
         r2: float,
         mape: float,
         total_amostras: int,
+        valor_medio_previsto: float,
     ) -> None:
         """Registra métricas do holdout desagregadas por zona territorial."""
         z = str(zona).strip() or "Desconhecida"
@@ -613,6 +646,9 @@ class ColetorPrometheus(ContratoTelemetria):
         self._gauge_holdout_r2_zona.labels(zona=z).set(r2)
         self._gauge_holdout_mape_zona.labels(zona=z).set(mape)
         self._gauge_holdout_amostras_zona.labels(zona=z).set(float(total_amostras))
+        self._gauge_holdout_valor_medio_previsto_zona.labels(zona=z).set(
+            valor_medio_previsto
+        )
 
     def registrar_holdout_bairro(
         self,
@@ -620,12 +656,16 @@ class ColetorPrometheus(ContratoTelemetria):
         zona: str,
         rmse: float,
         r2: float,
+        valor_medio_previsto: float,
     ) -> None:
         """Registra métricas do holdout desagregadas por bairro."""
         b = str(bairro).strip() or "Desconhecido"
         z = str(zona).strip() or "Desconhecida"
         self._gauge_holdout_rmse_bairro.labels(bairro=b, zona=z).set(rmse)
         self._gauge_holdout_r2_bairro.labels(bairro=b, zona=z).set(r2)
+        self._gauge_holdout_valor_medio_previsto_bairro.labels(
+            bairro=b, zona=z
+        ).set(valor_medio_previsto)
 
     # ── Qualidade dos Dados ──────────────────────────────────────────────────────
 
@@ -684,6 +724,7 @@ class ColetorPrometheus(ContratoTelemetria):
         try:
             import os
             import threading
+
             import psutil  # type: ignore[import]
             proc = psutil.Process(os.getpid())
             self._gauge_sistema_cpu_pct.set(proc.cpu_percent(interval=0.1))

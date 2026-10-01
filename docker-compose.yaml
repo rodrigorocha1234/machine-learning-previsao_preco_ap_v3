@@ -260,14 +260,10 @@ services:
       - -c
       - |
         apt-get update && apt-get install -y --no-install-recommends libgomp1
-        pip install --no-cache-dir boto3 scikit-learn lightgbm xgboost psycopg2-binary scipy pandas cloudpickle typing_extensions
+        pip install --no-cache-dir boto3 scikit-learn lightgbm xgboost psycopg2-binary scipy pandas cloudpickle typing_extensions prometheus-client
         python -c "import site, pathlib; p = pathlib.Path(site.getsitepackages()[0]) / 'app_src.pth'; p.write_text('/app\n/app/src\nimport typing, typing_extensions; setattr(typing, \"override\", getattr(typing_extensions, \"override\", lambda f: f))\n')"
         export PYTHONPATH=/app:/app/src:$${PYTHONPATH}
-        mlflow models serve \
-          -m "models:/previsao_preco_apartamento_modelo@champion" \
-          --host 0.0.0.0 \
-          --port 8080 \
-          --no-conda
+        python -m app_build.observabilidade_metricas.servidor_inferencia
     ports:
       - "8080:8080"
     healthcheck:
@@ -280,6 +276,25 @@ services:
       mlflow-network:
         ipv4_address: 172.20.0.32
     restart: unless-stopped
+
+  metricas-treino:
+    image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION}
+    profiles:
+      - dashboard
+    command: ["python", "/exportar_metricas.py"]
+    environment:
+      METRICAS_TREINO_ARQUIVO: /metricas/treino.prom
+    volumes:
+      - ./scripts/exportar_metricas.py:/exportar_metricas.py:ro
+      - ./observabilidade_data:/metricas:ro
+    networks:
+      - mlflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
 networks:
   mlflow-network:

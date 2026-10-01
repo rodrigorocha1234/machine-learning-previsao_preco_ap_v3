@@ -123,5 +123,8 @@ class AvaliadorAninhado(ContratoValidador):
             resultados_folds=resultados_folds,
             metricas_medias=metricas_medias,
             metricas_medianas=metricas_medianas,
+            metricas_desvios_padrao=AcumuladorMetricas.agregar_desvios_padrao(
+                metricas_por_fold
+            ),
             residuos_totais=residuos_totais,
         )
