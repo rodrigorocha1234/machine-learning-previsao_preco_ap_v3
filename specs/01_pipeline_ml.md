@@ -14,4 +14,4 @@ As seis métricas são RMSE, MAE, MSE, R², RMSE relativo e MAPE. Agregações: 
 
 Friedman utiliza RMSE; Nemenyi calcula comparações e só marca significância quando Friedman também é significativo. Shapiro e análise paramétrica são complementares. A seleção configurável não garante suporte completo a outra métrica principal em todos os módulos.
 
-Comparação temporal real, isolamento mais robusto e ensemble efetivo permanecem pendentes. [Detalhes da CV](../docs/validacao_cruzada_e_tuning.md) e [matriz de implementação](../production_artifacts/Technical_Specification.md).
+A votação final usa VotingRegressor com média das previsões dos componentes ajustados no desenvolvimento. Comparação temporal real e isolamento mais robusto permanecem pendentes. [Detalhes da CV](../docs/validacao_cruzada_e_tuning.md) e [matriz de implementação](../production_artifacts/Technical_Specification.md).

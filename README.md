@@ -38,7 +38,7 @@ A fonte atual é `dados/bairro_final_v3_engineered.xlsx`. O alvo é `Valor_da_Ve
 - CV externa: 5 folds × 3 repetições; CV interna: 5 folds. Pré-processamento ajustado dentro do pipeline de cada busca.
 - Ridge, árvore de decisão e Random Forest ativos no YAML atual; dez famílias de estimadores disponíveis.
 - Médias, medianas e desvios padrão (`ddof=0`) das seis métricas entre folds externos.
-- Seleção pode listar um comitê, mas o treinamento final utiliza somente seu líder; não há VotingRegressor montado no fluxo atual.
+- Com `selecao_modelos.votacao: true`, o `VotingRegressor` combina por média os top K modelos, cada um com tuning e pré-processamento próprios. Com `false`, treina o vencedor individual.
 - Preços previstos por zona/bairro na API são médias **do lote enviado**. No Grafana, as médias de serving resumem os imóveis atendidos no período selecionado.
 - Métricas de treino são persistidas em `observabilidade_data/treino.prom` e servidas continuamente pelo contêiner `metricas-treino`.
 - O serving resolve `champion` ao iniciar e fixa a versão carregada. Uma nova avaliação sem promoção não altera a API.

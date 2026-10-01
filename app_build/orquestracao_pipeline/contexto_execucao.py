@@ -34,6 +34,7 @@ class ContextoExecucao:
         self.resultados_shapiro: list[ResultadoShapiro] = []
         self.decisao_selecao: DecisaoSelecao | None = None
         self.modelo_campeao_final: BaseEstimator | None = None
+        self.parametros_componentes: dict[str, dict[str, object]] = {}
         self.motor_imobiliario: MotorImobiliario | None = None
         self.metricas_holdout_global: MetricasRegressao | None = None
         self.metricas_holdout_zona: dict[str, MetricasRegressao] = {}

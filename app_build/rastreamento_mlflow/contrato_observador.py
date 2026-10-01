@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 import pandas as pd
@@ -46,6 +46,7 @@ class EventoTreinoFinalConcluido:
     explicacoes_parametros: tuple[ExplicacaoParametro, ...]
     dados_exemplo: pd.DataFrame
     motor_imobiliario: MotorImobiliario | None = None
+    parametros_componentes: dict[str, dict[str, object]] = field(default_factory=dict)
 
 
 

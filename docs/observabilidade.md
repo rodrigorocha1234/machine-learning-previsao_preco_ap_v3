@@ -232,3 +232,9 @@ A instrumentação não registra corpos completos de requisições em métricas.
 O painel **Log Detalhado de Andamento do Pipeline (ExecutorEsteira)** consulta `{container="executor_esteira"}` no Loki, com até 1.000 linhas e uma janela própria de **24 horas** quando o dashboard usa intervalo relativo. Assim, selecionar os últimos cinco minutos para as métricas não oculta uma execução anterior do pipeline. A indicação do intervalo permanece visível no painel.
 
 Para investigar execuções mais antigas, selecione um intervalo absoluto que inclua a execução ou consulte a mesma expressão no Explore. A janela não altera a retenção do Loki e não recupera registros que tenham sido removidos. A ausência de logs nos últimos minutos não significa que o painel ou o histórico foi apagado.
+
+## Métricas com votação ativa
+
+Com `selecao_modelos.votacao: true`, o modelo final é um VotingRegressor. As métricas de holdout passam a avaliar a média das previsões do comitê no próximo treinamento. Os painéis de Nested CV continuam mostrando média e desvio dos modelos individuais; não há série de CV do ensemble final. Veja [formação e avaliação do comitê](validacao_cruzada_e_tuning.md#votação-com-votingregressor).
+
+O modelo já carregado no serving só muda após publicação de uma nova versão e reinício do serviço. Assim, métricas de uma nova avaliação de treino podem corresponder a um modelo diferente daquele que atende a API.

@@ -7,7 +7,7 @@ A documentação descreve o código atual. Exemplos numéricos não são benchma
 - [Visão geral](../README.md).
 - [Instalação, treinamento, publicação e diagnóstico](../production_artifacts/Deployment.md).
 - [Contrato da API](exemplo_chamada_api_mlflow.md).
-- [Validação cruzada e sensibilidade às divisões dos dados](validacao_cruzada_e_tuning.md).
+- [Validação cruzada, VotingRegressor e sensibilidade às divisões dos dados](validacao_cruzada_e_tuning.md).
 - [Grafana, Prometheus, persistência e catálogo de métricas](observabilidade.md).
 
 ## Engenharia e evidências

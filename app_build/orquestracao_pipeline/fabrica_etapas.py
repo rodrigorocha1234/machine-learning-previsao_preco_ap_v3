@@ -1,4 +1,9 @@
+from collections.abc import Mapping
+from dataclasses import replace
+from typing import cast
+
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 
 from app_build.ajuste_modelos.explicador_parametros import ExplicadorParametros
@@ -34,6 +39,7 @@ from app_build.rastreamento_mlflow.contrato_observador import (
 from app_build.regras_negocio.agregador_hierarquico import AgregadorHierarquico
 from app_build.regras_negocio.contrato_negocio import ResultadoImobiliario
 from app_build.regras_negocio.motor_imobiliario import MotorImobiliario
+from app_build.selecao_modelos.fabrica_comite import FabricaComite
 from app_build.selecao_modelos.seletor_campeao import SeletorCampeao
 from app_build.validacao_cruzada.acumulador_metricas import AcumuladorMetricas
 from app_build.validacao_cruzada.avaliador_aninhado import AvaliadorAninhado
@@ -429,11 +435,24 @@ class Etapa13TuningFinal(ContratoEtapa):
         dados_x = contexto.dados_desenvolvimento.drop(columns=[target_col])
         vetor_y = contexto.dados_desenvolvimento[target_col]
 
-        nome_campeao = contexto.decisao_selecao.modelo_principal
-        cfg_modelo = contexto.configuracao_modelos[nome_campeao]
+        contexto.parametros_componentes = {}
+        estimadores = [
+            (nome, self._ajustar_componente(contexto, nome, dados_x, vetor_y))
+            for nome in contexto.decisao_selecao.modelos_selecionados
+        ]
+        contexto.modelo_campeao_final = FabricaComite.criar(
+            contexto.decisao_selecao, estimadores
+        )
 
-        from collections.abc import Mapping
-        from typing import cast
+    def _ajustar_componente(
+        self,
+        contexto: ContextoExecucao,
+        nome_modelo: str,
+        dados_x: pd.DataFrame,
+        vetor_y: pd.Series,
+    ) -> BaseEstimator:
+        assert contexto.configuracao_geral is not None, "Configuracao ausente"
+        cfg_modelo = contexto.configuracao_modelos[nome_modelo]
 
         parametros_base = dict(
             cast(Mapping[str, object], cfg_modelo.get("parametros", {}))
@@ -457,7 +476,7 @@ class Etapa13TuningFinal(ContratoEtapa):
         ).obter_validador()
 
         estimador_base = FabricaEstimadores.criar_estimador(
-            nome_campeao, parametros_base
+            nome_modelo, parametros_base
         )
         preprocessador = ConstrutorPipeline().criar_preprocessador()
         pipeline_base = Pipeline(
@@ -477,7 +496,11 @@ class Etapa13TuningFinal(ContratoEtapa):
             semente=semente,
             iteracoes=n_iter,
         )
-        contexto.modelo_campeao_final = resultado_tuning.melhor_estimador
+        pipeline_ajustado = cast(Pipeline, resultado_tuning.melhor_estimador)
+        contexto.parametros_componentes[nome_modelo] = dict(
+            pipeline_ajustado.named_steps["modelo"].get_params(deep=False)
+        )
+        return pipeline_ajustado
 
 
 class Etapa14TreinamentoFinal(ContratoEtapa):
@@ -745,13 +768,18 @@ class Etapa19RastreamentoMlflow(ContratoEtapa):
             columns=list(colunas_para_remover)
         )
         explicador = ExplicadorParametros()
-        params_exp = explicador.explicar(contexto.decisao_selecao.modelo_principal, {})
+        params_exp = tuple(
+            replace(explicacao, parametro=f"{nome}.{explicacao.parametro}")
+            for nome, parametros in contexto.parametros_componentes.items()
+            for explicacao in explicador.explicar(nome, parametros)
+        )
 
         contexto.despachante.despachar_treino_final(
             EventoTreinoFinalConcluido(
-                nome_modelo=contexto.decisao_selecao.modelo_principal,
+                nome_modelo=contexto.decisao_selecao.nome_modelo_final,
                 estimador=contexto.modelo_campeao_final,
                 explicacoes_parametros=params_exp,
+                parametros_componentes=contexto.parametros_componentes,
                 dados_exemplo=dados_x,
                 motor_imobiliario=contexto.motor_imobiliario,
             )

@@ -7,6 +7,7 @@ Este documento substitui o parecer anterior de “100% aprovado para produção�
 ## O que está presente
 
 - Pipeline de regressão, pré-processamento dentro das buscas e CV aninhada.
+- VotingRegressor final com tuning por integrante, média de pesos iguais e serialização no pyfunc.
 - Desvio padrão descritivo para seis métricas, com registro MLflow/Prometheus e exibição por modelo no Grafana.
 - Avaliação por localidade e resposta pyfunc com referências de negócio.
 - Serving nativo MLflow instrumentado, com versão fixa durante o processo.
@@ -15,7 +16,7 @@ Este documento substitui o parecer anterior de “100% aprovado para produção�
 
 ## O que não deve ser afirmado
 
-Não há evidência de holdout criptografado, estratificação efetiva do split, target transformado com log1p, ensemble VotingRegressor final, conformidade integral com todas as regras, drift real contínuo integrado ou erro de produção associado a vendas reais.
+Não há evidência de holdout criptografado, estratificação efetiva do split, target transformado com log1p, conformidade integral com todas as regras, drift real contínuo integrado ou erro de produção associado a vendas reais.
 
 O modelo campeão, sua versão, seus scores e a quantidade de runs são fatos de cada ambiente/execução. Consulte o Registry, o run associado e a versão efetivamente carregada no serving. Não use valores do monitor demonstrativo como resultados de homologação.
 
@@ -25,7 +26,7 @@ O modelo campeão, sua versão, seus scores e a quantidade de runs são fatos de
 | --- | --- |
 | Estatística | Avaliar pressupostos da comparação, dependência entre folds e grupos com poucas observações |
 | Isolamento | Fortalecer controles hoje baseados em asserts/chave constante e documentar acessos aos dados brutos |
-| Seleção | Implementar ensemble efetivo se a política de votação for requisito obrigatório |
+| Seleção | Avaliar desempenho do VotingRegressor na base real; a CV atual mede os componentes, não o conjunto selecionado |
 | Negócio | Integrar suficiência ao caminho vetorizado e externalizar percentuais pretendidos |
 | Rastreabilidade | Persistir integralmente tuning, configurações e parâmetros efetivos |
 | Dados | Implementar fontes/EDA histórica previstas e baseline real de drift |

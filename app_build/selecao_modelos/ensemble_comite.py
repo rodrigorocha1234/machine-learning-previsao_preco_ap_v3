@@ -25,7 +25,7 @@ class EnsembleComite(ContratoSeletor):
         campeao_lider = top_k[0]
 
         justificativa = (
-            f"Comite de votacao formado pelos top {len(top_k)} modelos: {top_k}. "
+            f"VotingRegressor com media de pesos iguais dos top {len(top_k)} modelos: {top_k}. "
             f"Lider do comite: '{campeao_lider}' com rank {ranks[campeao_lider]:.2f}."
         )
 

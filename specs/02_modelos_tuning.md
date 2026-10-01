@@ -12,4 +12,4 @@ As dez famílias estão na fábrica. Ridge, árvore de decisão e Random Forest 
 
 O run pai `nested_cv_<modelo>` registra médias, desvios padrão, algumas medianas, `desvio_padrao_ddof=0` e quantidade de folds. Runs filhos registram métricas externas e melhores parâmetros. O histórico completo da busca, todos os parâmetros efetivos e o tuning final ainda não têm rastreabilidade integral.
 
-A opção de votação identifica um grupo e seu líder; o fluxo final treina apenas o líder, sem VotingRegressor. [Guia de modelagem](../docs/validacao_cruzada_e_tuning.md).
+A opção de votação seleciona os top K modelos por ranking e monta um VotingRegressor. Cada componente recebe tuning próprio e um pipeline completo; a previsão final é a média com pesos iguais. Os parâmetros efetivos dos componentes finais e suas interpretações são registrados no run final. A CV continua avaliando os modelos individuais; o comitê final é avaliado no holdout. [Guia de modelagem](../docs/validacao_cruzada_e_tuning.md).

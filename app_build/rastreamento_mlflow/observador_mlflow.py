@@ -236,7 +236,7 @@ class ObservadorMlflow(ContratoObservador):
         try:
             with mlflow.start_run(run_name="selecao_modelo_final"):
                 mlflow.set_tag("etapa", "selecao")
-                mlflow.set_tag("modelo_campeao", evento.decisao.modelo_principal)
+                mlflow.set_tag("modelo_campeao", evento.decisao.nome_modelo_final)
                 mlflow.set_tag("modo_selecao", evento.decisao.modo_selecao)
                 mlflow.log_param("justificativa", evento.decisao.justificativa)
         except (MlflowException, OSError, ValueError, RuntimeError) as erro:
@@ -248,6 +248,16 @@ class ObservadorMlflow(ContratoObservador):
             with mlflow.start_run(run_name=f"modelo_final_{evento.nome_modelo}"):
                 mlflow.set_tag("etapa", "treino_final")
                 mlflow.set_tag("modelo", evento.nome_modelo)
+                mlflow.log_dict(
+                    evento.parametros_componentes,
+                    "treino_final/parametros_componentes.json",
+                )
+                mlflow.log_text(
+                    self._explicador.gerar_markdown(
+                        evento.nome_modelo, evento.explicacoes_parametros
+                    ),
+                    "treino_final/interpretacao_parametros.md",
+                )
                 mlflow.set_tag("regras_negocio_hierarquia", "GLOBAL_ZONA_BAIRRO")
                 mlflow.set_tag(
                     "simulador_descontos", "moderado_5_agressivo_10_queima_15"

@@ -13,7 +13,7 @@ Esta descrição substitui o desenho inicial como referência operacional. [Requ
 | `ajuste_modelos` | Fábricas de dez estimadores e tuning grid/random/nenhum |
 | `validacao_cruzada` | Folds compartilhados, avaliação externa e agregação de métricas |
 | `estatistica_modelos` | Friedman, Nemenyi, Shapiro e análise complementar |
-| `selecao_modelos` | Ranking e identificação do líder/comitê |
+| `selecao_modelos` | Ranking, seleção dos integrantes e fábrica de VotingRegressor |
 | `regras_negocio` | Estatísticas globais, de zona/bairro e simulações |
 | `rastreamento_mlflow` | Eventos, observador síncrono e modelo pyfunc |
 | `observabilidade_metricas` | Telemetria de treino/serving e snapshot persistente |
@@ -29,7 +29,7 @@ flowchart TD
     Pipeline --> Dev[Desenvolvimento: 80%]
     Pipeline --> Holdout[Holdout lógico: 20%]
     Dev --> CV[CV aninhada e comparação]
-    CV --> Final[Tuning e treino do líder]
+    CV --> Final[Tuning dos selecionados e treino individual ou VotingRegressor]
     Final --> Avaliacao[Avaliação do holdout]
     Holdout --> Avaliacao
     Avaliacao --> MLflow[Tracking e Registry no fluxo completo]
@@ -63,7 +63,6 @@ O snapshot é salvo no início e fim de etapas e após a conclusão; durante o t
 ## Diferenças para o desenho inicial
 
 - O contexto é mutável; não existe estado global imutável ou criptográfico de congelamento.
-- A seleção de comitê não constrói um ensemble preditivo; somente o líder chega ao ajuste final.
 - As fontes JSON, PostgreSQL, REST, S3 e Spark não estão integradas como carregadores do fluxo.
 - O enriquecimento vetorizado faz fallback por localidade ausente, não por suficiência de amostra.
 - Drift da etapa 9 compara a base com ela mesma; o monitor demonstrativo usa simulações. Nenhum dos dois constitui drift integrado de produção.

@@ -16,7 +16,7 @@ Entrada do treino: `dados/bairro_final_v3_engineered.xlsx`. A etapa de carga rem
 | 6–7 | Split e bloqueio do holdout na etapa 6; etapa 7 é marcador |
 | 8–9 | EDA no desenvolvimento e diagnóstico de drift sem comparação temporal real |
 | 10–12 | Nested CV, testes estatísticos e seleção |
-| 13–15 | Tuning final do líder, treino e flag de congelamento |
+| 13–15 | Tuning dos selecionados, treino individual ou VotingRegressor e flag de congelamento |
 | 16–18 | Verificação da flag, liberação/avaliação do holdout na etapa 17 e regras de negócio |
 | 19–20 | Registro/promoção MLflow na etapa 19; etapa 20 não inicia processos |
 
@@ -38,7 +38,7 @@ Cada modelo produz média, mediana e desvio padrão descritivo (`ddof=0`) de RMS
 | Média, mediana e desvio entre folds | Implementado para seis métricas |
 | Runs pai/filho e melhores parâmetros | Implementado para os resultados externos |
 | Todo o histórico de tuning interno/final e YAML versionado | Persistência completa pendente; o resultado da busca existe em memória |
-| Ensemble de votação | Pendente; a seleção lista componentes, mas treina apenas o líder |
+| Ensemble de votação | VotingRegressor dos top K com média de pesos iguais, tuning individual e avaliação final no holdout |
 | Fallback por suficiência em toda inferência | Parcial; API vetorizada usa presença da localidade |
 | Descontos configuráveis por YAML | Pendente; percentuais atuais estão no código |
 | Fontes substituíveis amplas | Excel/CSV/Parquet disponíveis; fluxo usa Excel explicitamente |

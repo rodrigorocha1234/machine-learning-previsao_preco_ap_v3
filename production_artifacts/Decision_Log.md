@@ -7,6 +7,7 @@ Este registro descreve decisões efetivamente presentes. Substitui afirmações 
 | Fábricas e estratégias para estimadores/tuning | Seleção por configuração, com implementações grid/random/nenhum |
 | Pré-processamento no pipeline da busca | Imputação, escala e encoding ajustados dentro do treino de cada fold |
 | Divisões externas compartilhadas | Comparação dos modelos sobre as mesmas partições |
+| VotingRegressor com pesos iguais | Combina os top K do ranking após tuning individual no desenvolvimento; cada componente conserva seu pré-processamento e o holdout só avalia o conjunto final |
 | Desvio padrão com `ddof=0` | Dispersão descritiva dos scores externos; mantém a convenção anterior do RMSE |
 | Observer síncrono para MLflow | Desacopla eventos de tracking; não há processamento assíncrono garantido |
 | Cofre lógico em memória | Controla uma liberação por instância; não oferece criptografia e depende de asserts |
@@ -26,4 +27,4 @@ O serving instrumentado usa um worker. Múltiplos workers exigem uma estratégia
 
 ## Pendências mantidas explícitas
 
-O comitê selecionado não se torna VotingRegressor; o fallback de suficiência não foi integrado ao caminho vetorizado; os descontos ainda são constantes no código; histórico completo do tuning não é persistido; há dependências sem lock central e instalação de pacotes na inicialização de contêineres. Consulte [o estado dos requisitos](Technical_Specification.md) antes de afirmar que uma decisão do desenho original já está implementada.
+O fallback de suficiência não foi integrado ao caminho vetorizado; os descontos ainda são constantes no código; histórico completo do tuning não é persistido; há dependências sem lock central e instalação de pacotes na inicialização de contêineres. Consulte [o estado dos requisitos](Technical_Specification.md) antes de afirmar que uma decisão do desenho original já está implementada.
