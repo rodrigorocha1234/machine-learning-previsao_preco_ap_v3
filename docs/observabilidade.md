@@ -225,3 +225,10 @@ Esses histogramas são publicados por `DistribuicaoServing` via agregações vet
 `EmissorLogs`, Loki e Alloy compõem a coleta de logs. `scripts/emitir_logs_loki.py` e o monitor demonstrativo não devem ser confundidos com observações reais de inferência. Prometheus e dashboards usam as configurações em `config_ob/`; o Compose define volumes e rede.
 
 A instrumentação não registra corpos completos de requisições em métricas. Esse fato não substitui uma revisão de todos os logs e controles de acesso da stack. Consulte [implantação](../production_artifacts/Deployment.md) e [limitações](../production_artifacts/Final_Audit.md).
+
+
+## Log detalhado do pipeline
+
+O painel **Log Detalhado de Andamento do Pipeline (ExecutorEsteira)** consulta `{container="executor_esteira"}` no Loki, com até 1.000 linhas e uma janela própria de **24 horas** quando o dashboard usa intervalo relativo. Assim, selecionar os últimos cinco minutos para as métricas não oculta uma execução anterior do pipeline. A indicação do intervalo permanece visível no painel.
+
+Para investigar execuções mais antigas, selecione um intervalo absoluto que inclua a execução ou consulte a mesma expressão no Explore. A janela não altera a retenção do Loki e não recupera registros que tenham sido removidos. A ausência de logs nos últimos minutos não significa que o painel ou o histórico foi apagado.
