@@ -17,3 +17,8 @@ Código de produção próprio não deve utilizar `if`, `elif` ou `match` para r
 
 ## Regra de simplicidade
 Não trocar um `if` trivial por uma arquitetura exagerada. Quando uma condição inevitável vier de API externa ou biblioteca, encapsular no menor adapter possível e documentar em `Decision_Log.md`. O domínio não deve propagar condicionais.
+
+
+## Escopo e verificação
+
+Este documento define requisitos de desenvolvimento; não comprova que todo o código atual já esteja conforme. O estado conhecido e as divergências estão na [especificação técnica](../production_artifacts/Technical_Specification.md) e no [relatório de qualidade](../production_artifacts/QA_Report.md). A atualização da documentação não flexibiliza estas regras nem substitui sua auditoria.

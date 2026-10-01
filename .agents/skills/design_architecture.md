@@ -33,3 +33,8 @@ Não usar `if`, `elif` ou `match` para decisões de domínio/arquitetura. Escolh
 ## Entrega
 - `production_artifacts/Architecture.md`
 - árvore alvo em `app_build/`.
+
+
+## Referência para o projeto existente
+
+Este arquivo descreve o processo de autoria do Antigravity; seus objetivos não são evidências de implementação ou homologação. Para operar a aplicação existente, consulte o [índice atual da documentação](../../docs/README.md). Para mudanças, confira primeiro o [estado de atendimento dos requisitos](../../production_artifacts/Technical_Specification.md). O workflow `/startcycle` continua reservado à sua invocação explícita, com os gates definidos naquele fluxo.

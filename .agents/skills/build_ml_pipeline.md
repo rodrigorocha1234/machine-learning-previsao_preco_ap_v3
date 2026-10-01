@@ -50,3 +50,10 @@ Após o treinamento de cada modelo, produzir artifact Markdown/JSON contendo cad
 - `learning_rate`: velocidade de atualização do boosting/rede.
 
 A interpretação não pode afirmar causalidade onde existe apenas configuração técnica.
+
+
+## Referência para o projeto existente
+
+Este arquivo descreve o processo de autoria do Antigravity; seus objetivos não são evidências de implementação ou homologação. Para operar a aplicação existente, consulte o [índice atual da documentação](../../docs/README.md). Para mudanças, confira primeiro o [estado de atendimento dos requisitos](../../production_artifacts/Technical_Specification.md). O workflow `/startcycle` continua reservado à sua invocação explícita, com os gates definidos naquele fluxo.
+
+A implementação atual já agrega média, mediana e desvio padrão (`ddof=0`) das seis métricas externas. O comitê selecionado ainda não é um ensemble preditivo; a documentação deve manter essa pendência explícita.

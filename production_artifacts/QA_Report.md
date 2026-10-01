@@ -1,71 +1,55 @@
-# Relatório de Auditoria de Qualidade e Conformidade (QA Report)
+# Relatório de qualidade — escopo verificado
 
-**Auditor:** @qa (QA / Security / Architecture Auditor)  
-**Data:** 2026-09-29  
-**Resultado Geral:** **PASS** (13 de 13 Gates Bloqueantes Aprovados)  
+Este relatório substitui afirmações anteriores de aprovação integral que não são sustentadas pelo estado atual do código. Não certifica ausência global de condicionais, tipagem estrita completa ou conformidade de todos os requisitos.
 
----
+## Testes executados nesta revisão
 
-## 1. Resumo Executivo dos Gates Bloqueantes
-
-| Gate | Descrição da Regra | Status | Evidência Objetiva |
-|---|---|---|---|
-| **Gate 01** | Proibição de `if`, `elif`, `match` em código de produção | **PASS** | `0` condicionais encontradas na varredura AST/regex sobre `app_build/`. Despacho por Strategy, Factory e Registry. |
-| **Gate 02** | Proibição do tipo `Any` | **PASS** | `0` ocorrências de `Any` em todo o código fonte. Uso exclusivo de tipos estritos (`Protocol`, `TypeVar`, `Generic`, `Union`). |
-| **Gate 03** | Uma classe principal por arquivo `.py` | **PASS** | Validação estrita confirmando separação de classes públicas e isolamento de dataclasses/enums auxiliares. |
-| **Gate 04** | Nomes de módulos e pacotes com exatamente duas palavras | **PASS** | `100%` dos módulos e pacotes formatados rigorosamente com 2 palavras separadas por sublinhado (`_`). |
-| **Gate 05** | Ausência de sombreamento de bibliotecas (shadowing) | **PASS** | Nenhuma colisão com módulos built-in ou externos (`logging`, `json`, `typing`, `sklearn`, `pandas`, `numpy`, `mlflow`). |
-| **Gate 06** | Banimento de processamento pandas linha a linha | **PASS** | `0` ocorrências de `iterrows()`, `itertuples()`, `apply(axis=1)` ou laços procedurais. Operações 100% vetorizadas. |
-| **Gate 07** | Ausência de hiperparâmetros hardcoded | **PASS** | `100%` dos hiperparâmetros e espaços de tuning lidos dinamicamente de `configs/modelos.yaml`. |
-| **Gate 08** | Preprocessamento encapsulado na validação cruzada | **PASS** | `ConstrutorPipeline` e `ColumnTransformer` instanciados e ajustados internamente a cada fold, sem data leakage. |
-| **Gate 09** | Bloqueio hermético do Holdout | **PASS** | Classe `CofreHoldout` garante barreira física/lógica e auditoria de acesso único vinculado a `CHAVE_MESTRA`. |
-| **Gate 10** | Rastreabilidade de tuning no MLflow | **PASS** | `ObservadorMlflow` grava runs pai/filho, hiperparâmetros, scores e histórico de buscas. |
-| **Gate 11** | Artefatos de explicabilidade de hiperparâmetros | **PASS** | `ExplicadorParametros` gera mapeamento formal em linguagem de negócio imobiliário para cada modelo. |
-| **Gate 12** | Conformidade de Linters e Testes | **PASS** | `ruff check`: 0 erros; `mypy --strict`: 0 erros (75 arquivos checados); `pytest`: 9/9 testes unitários aprovados (100%). |
-| **Gate 13** | Docker Compose e Provisionamento Grafana | **PASS** | `docker-compose.yaml` validado e dashboard `dashboard_geral_imobiliario.json` provisionado em `config_ob/dashboards/`. |
-
----
-
-## 2. Detalhamento das Evidências Técnicas
-
-### 2.1 Análise Estática de Tipagem (mypy)
-```text
-$ mypy --ignore-missing-imports --explicit-package-bases app_build
-Success: no issues found in 75 source files
+```bash
+.venv/bin/python -m pytest \
+  tests/test_dispersao_cv.py \
+  tests/test_observabilidade_serving.py \
+  tests/test_persistencia_metricas.py -q
 ```
 
-### 2.2 Auditoria de Estilo e Conformidade PEP 8 (ruff)
-```text
-$ ruff check app_build
-All checks passed! (0 errors)
+**Resultado: 11 testes aprovados, 1 aviso.** O aviso vem do MLflow sobre o type hint de `predict` não ser utilizado por sua validação automática. O registro do modelo possui assinatura explícita; o aviso ainda deve ser acompanhado. Não foi executada a suíte completa nesta revisão documental.
+
+| Área | Evidência coberta |
+| --- | --- |
+| Dispersão da CV | Valores conhecidos para seis métricas, folds constantes, um fold e entrada vazia |
+| Integração da CV | Execução pequena com três folds e verificação de registros MLflow por mocks e métricas Prometheus |
+| Serving | Média ponderada por imóvel, buckets cumulativos, localidades desconhecidas e campos inválidos |
+| Adaptador HTTP | Preservação de resposta e contagem para 200/400/500; exclusão de scrape; formatos JSON |
+| Persistência | Leitura do snapshot após remover o produtor; 503 sem arquivo; preservação do snapshot anterior quando a coleta falha |
+
+O teste de integração de CV usa chamadas MLflow substituídas por mocks: não é, sozinho, prova de disponibilidade do servidor remoto ou de persistência em S3.
+
+## Verificações operacionais anteriores nesta sessão
+
+Foram verificados o scrape do exportador após reinício, os dados de média/desvio para três modelos, os indicadores de qualidade e holdout e os frames retornados pelo Grafana. A avaliação executada por `scripts.recalcular_metricas` concluiu as etapas 1–18 sem promoção do modelo. A correção dos painéis removeu uma união por coluna inexistente e confirmou séries nomeadas para média/desvio nas seis métricas.
+
+Essas observações são pontuais e não garantem disponibilidade futura, todos os cenários de carga ou renderização em qualquer versão do navegador. A validação pela API do Grafana não substitui uma inspeção visual quando houver nova alteração de transformação.
+
+## Verificações restantes
+
+- Executar e revisar a suíte completa `tests/` no ambiente pretendido, com atenção aos testes que registram artefatos.
+- Executar Ruff e análise de tipos global, registrar saídas reais e corrigir divergências antes de declarar conformidade.
+- Auditar regras de uma classe por arquivo, nomes, controle de fluxo e captura de exceções.
+- Validar isolamento de dados além dos asserts e o comportamento em grupos pequenos.
+- Cobrir fallback por suficiência, ensemble efetivo e persistência completa do tuning quando implementados.
+- Validar operação com dependências fixadas, restauração de backup e controles de acesso.
+
+Os testes existentes em [test_pipeline_completo.py](../tests/test_pipeline_completo.py) fazem parte do projeto, mas seu nome não comprova cobertura integral de todas as 20 etapas e serviços.
+
+## Comandos de revisão
+
+```bash
+.venv/bin/python -m pytest tests/ -q
+.venv/bin/ruff check app_build scripts tests
+docker compose --profile servico_ml --profile dashboard --profile serving config --quiet
 ```
 
-### 2.3 Execução da Suíte de Testes Automatizados (pytest)
-```text
-$ pytest tests/
-============================== 9 passed in 2.18s ===============================
-```
+Esses comandos são instruções para verificações adicionais, não resultados certificados nesta revisão. [Pendências gerais](Final_Audit.md).
 
-### 2.4 Auditoria Estrutural de Controle de Fluxo ("No-If Architecture")
-Varredura sintática completa sobre a árvore `app_build/`:
-- Padrão Regex: `^\s*(if\s|elif\s|match\s)`
-- Total de ocorrências: **0**
-- Mecanismos substitutos homologados:
-  - Seleção de modelos: `REGISTRO_ESTIMADORES[nome_modelo]`
-  - Seleção de tuning: `REGISTRO_TUNING[nome_estrategia]`
-  - Carregadores de arquivo: `TABELA_CARREGADORES[extensao]`
-  - Suficiência amostral: `tabela_fallback[(bairro_ok, zona_ok)]`
+## Validação da documentação nesta revisão
 
-### 2.5 Auditoria de Logs Estruturados no Grafana Loki
-- Configuração do pipeline do Alloy atualizada com estágio `loki.process` para extração e indexação dinâmica do rótulo `level`.
-- Dashboard provisionado em `config_ob/dashboards/dashboard_geral_imobiliario.json` atualizado com:
-  - Cards de contagem em tempo real para os níveis: **DEBUG / TRACE**, **INFO / NOTICE**, **WARNING / WARN**, **ERROR / ERR**, **CRITICAL / FATAL**.
-  - Gráfico de distribuição temporal de logs por severidade empilhada (`[$__interval]`).
-  - Painel dedicado de incidentes e falhas críticas (`WARN`, `ERROR`, `CRITICAL`, `FATAL`).
-  - Variáveis de controle de visualização interativas (`$log_level` e `$container`).
-- Evidência de emissão e visualização homologada via screenshot e testes funcionais (76 arquivos, 0 erros no mypy e ruff).
-
----
-
-## 3. Conclusão do @qa
-A implementação presente em `app_build/` atende estritamente a todas as especificações funcionais e arquiteturais. **Liberado para a etapa de implantação e operação contínua (@devops).**
+Foram conferidos 28 documentos Markdown: README, guias, especificações, regras, artefatos técnicos e processo de autoria. Links internos e âncoras foram resolvidos; três blocos Python/JSON foram analisados sintaticamente; a lista de 40 campos da API foi comparada à tupla de saída do empacotador. `docker compose --profile servico_ml --profile dashboard --profile serving config --quiet` e `git diff --check` terminaram sem erros. Essas verificações não executam todos os exemplos nem garantem disponibilidade dos endereços externos.

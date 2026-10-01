@@ -17,6 +17,8 @@
 5. [Dicionário de Campos de Saída](#5-dicionário-de-campos-de-saída)
 6. [Como Interpretar os Resultados](#6-como-interpretar-os-resultados)
 7. [Lógica de Fallback Hierárquico](#7-lógica-de-fallback-hierárquico)
+8. [Resumo dos campos](#8-resumo-dos-40-campos-de-saída)
+9. [Observabilidade da API](#observabilidade-da-api)
 
 ---
 
@@ -24,7 +26,7 @@
 
 A API retorna **muito mais do que o preço previsto**. Para cada imóvel enviado, a resposta identifica a Zona e o Bairro e o motor de regras de negócio enriquece automaticamente os resultados com:
 
-- Valor justo de venda predito pelo modelo ML (Ridge com Nested CV), em R$
+- Preço de venda estimado pelo modelo carregado no serving, em R$
 - Zona e Bairro associados a cada previsão, inclusive em chamadas com vários imóveis
 - Preço previsto médio por Zona (`valor_previsto_zona`) e por Zona/Bairro (`valor_previsto_bairro`), calculado sobre o lote enviado
 - **Preços de mercado de referência** em 3 níveis: Global, Zona e Bairro
@@ -112,7 +114,8 @@ payload = {
     ]
 }
 
-resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+resp.raise_for_status()
 resultado = resp.json()["predictions"][0]
 
 # Acesso estruturado por nível
@@ -178,7 +181,7 @@ print("\nPrevisão média por Bairro")
 print(por_bairro.to_string(index=False))
 ```
 
-As médias são calculadas somente sobre os imóveis enviados nessa chamada. Com apenas um imóvel em um grupo, a média coincide com o `valor_previsto` individual. Para representar toda uma Zona ou Bairro, envie à API a base de imóveis que deseja resumir; ela não presume nem consulta anúncios que não estejam no lote.
+As médias são calculadas somente sobre os imóveis enviados nessa chamada. Com apenas um imóvel em um grupo, a média coincide com o `valor_previsto` individual. Para representar toda uma Zona ou Bairro, envie à API um conjunto representativo dos imóveis que deseja resumir; ela não presume nem consulta anúncios que não estejam no lote.
 
 ---
 
@@ -197,13 +200,15 @@ O preço previsto da Zona Sul é `(600000 + 400000 + 800000) / 3 = 600000`; o do
 
 ### Disponibilização no MLflow Serving
 
-Os campos fazem parte da saída de `EmpacotadorModelo.predict`. Para um modelo já publicado, atualizar o código local não garante a atualização do artefato e da assinatura registrados. Registre uma versão com o empacotador atualizado, confira sua assinatura de saída e direcione o alias `champion` para essa versão; depois reinicie o serviço de serving para carregar o modelo atualizado.
+Os campos fazem parte da saída de `EmpacotadorModelo.predict`. O serving fixa a versão na inicialização. Para um modelo já publicado, atualizar o código local não garante a atualização do artefato e da assinatura registrados. Reiniciar pode carregar módulos montados atualizados, mas a assinatura registrada deve continuar compatível. Registre uma versão com o empacotador atualizado, confira sua assinatura de saída e direcione o alias `champion` para essa versão; depois reinicie o serviço de serving para carregar o modelo atualizado.
 
 Valide com o Exemplo D que cada item de `predictions` contém `valor_previsto_zona` e `valor_previsto_bairro`. Os aliases `valor_previsto_medio_zona` e `valor_previsto_medio_bairro` continuam disponíveis.
 
 ---
 
 ## 4. Resposta Completa da API
+
+Os números abaixo são ilustrativos; não identificam uma versão fixa nem constituem garantia de preço.
 
 A resposta contém **40 campos**: identificação do imóvel, previsão base, referências Global/Zona/Bairro e médias das previsões no lote. `valor_previsto` e `valor_m2_previsto` são estimativas individuais; os campos `*_zona` e `*_bairro` de previsão são as médias das previsões individuais para os grupos do lote. `zona_media_mercado` e `bairro_media_mercado` continuam sendo médias históricas de referência.
 
@@ -275,8 +280,8 @@ A resposta contém **40 campos**: identificação do imóvel, previsão base, re
 
 | Campo | Tipo | Descrição |
 | :--- | :---: | :--- |
-| `valor_previsto` | `float` | Valor justo de venda predito pelo modelo (R$) |
-| `valor_m2_previsto` | `float` | `valor_previsto ÷ Metragem` — Preço por m² previsto (R$/m²) |
+| `valor_previsto` | `float` | Preço de venda estimado pelo modelo (R$) |
+| `valor_m2_previsto` | `float` | `valor_previsto ÷ max(Metragem, 1.0)` — Preço por m² previsto (R$/m²) |
 | `valor_previsto_zona` | `float` | Média dos `valor_previsto` dos imóveis da mesma Zona enviados no lote (R$) |
 | `valor_previsto_bairro` | `float` | Média dos `valor_previsto` dos imóveis da mesma Zona e Bairro enviados no lote (R$) |
 | `valor_m2_previsto_zona` | `float` | Média dos `valor_m2_previsto` dos imóveis da mesma Zona enviados no lote (R$/m²) |
@@ -290,9 +295,9 @@ A resposta contém **40 campos**: identificação do imóvel, previsão base, re
 
 | Campo | Tipo | Fórmula / Significado |
 | :--- | :---: | :--- |
-| `global_mediana_mercado` ⭐ | `float` | **Mediana de todos os imóveis de Ribeirão Preto (R$)** — referência de mercado |
-| `global_media_mercado` ⭐ | `float` | **Média dos imóveis da cidade (R$)** — usada no cálculo do desvio |
-| `global_mediana_m2_mercado` ⭐ | `float` | **Mediana do preço/m² da cidade (R$/m²)** — base do índice |
+| `global_mediana_mercado` ⭐ | `float` | **Mediana dos imóveis da base de desenvolvimento (R$)** — referência de mercado |
+| `global_media_mercado` ⭐ | `float` | **Média dos imóveis da base de desenvolvimento (R$)** — usada no cálculo do desvio |
+| `global_mediana_m2_mercado` ⭐ | `float` | **Mediana do preço/m² da base de desenvolvimento (R$/m²)** — base do índice |
 | `indice_imovel_global` | `float` | `valor_m2_previsto ÷ global_mediana_m2_mercado` — >1 = acima da mediana |
 | `diferenca_perc_global` | `float` | `(valor_previsto − global_media_mercado) ÷ global_media_mercado × 100` (%) |
 | `global_desconto_5` | `float` | `global_mediana_mercado × 0.95` — desconto moderado sobre ref. global |
@@ -335,11 +340,13 @@ A resposta contém **40 campos**: identificação do imóvel, previsão base, re
 | `bairro_faixa_segura_piso` | `float` | `bairro_mediana_mercado × 0.90` |
 | `bairro_faixa_segura_teto` | `float` | `bairro_mediana_mercado` |
 
-> ⭐ = campos adicionados na versão atual do modelo
+> ⭐ = campos de referência histórica da base usada pelo modelo; não representam todos os imóveis existentes na cidade.
 
 ---
 
 ## 6. Como Interpretar os Resultados
+
+As comparações abaixo são descritivas da base de referência. Os rótulos de oportunidade, premium e negociação são interpretações ilustrativas, não recomendações automáticas de compra.
 
 ### Leitura rápida da análise hierárquica
 
@@ -387,15 +394,13 @@ JARDIM BOTÂNICO:
 
 ## 7. Lógica de Fallback Hierárquico
 
-Quando um bairro ou zona não possui amostra estatística suficiente para gerar estatísticas confiáveis, o motor aplica fallback automático:
+No caminho vetorizado usado pela API, uma referência de bairro ausente recebe a referência da zona; uma zona ausente recebe a global. **O limite mínimo de amostra não é aplicado nesse caminho**, embora exista um resolvedor de suficiência no método de previsão individual e estados amostrais na agregação de treino.
 
-```
-Prioridade 1: Bairro (se amostra suficiente → definido em configs/pipeline.yaml)
-Prioridade 2: Zona   (se bairro insuficiente)
-Prioridade 3: Global (sempre disponível — nunca retorna nulo)
-```
+As estatísticas de referência vêm da base de desenvolvimento guardada no modelo. A tabela histórica de bairros é indexada pelo nome do Bairro; já as médias de previsão no lote agrupam pela combinação Zona/Bairro.
 
-Isso garante que **toda requisição retorna os 40 campos de saída**, incluindo Zona e Bairro para identificação, valores de referência com fallback e médias de previsão calculadas no lote.
+As simulações `*_desconto_5`, `*_desconto_10`, `*_desconto_15` e `*_faixa_segura_*` usam as medianas históricas de cada nível no caminho vetorizado. A expressão “faixa segura” é o nome do campo de negócio: não significa intervalo de confiança, garantia de retorno ou avaliação de risco financeiro. Os percentuais estão no código, não no YAML atual.
+
+Os 40 campos descrevem a saída do empacotador completo com motor imobiliário. Entradas inválidas podem ser rejeitadas pelo MLflow; o fallback genérico sem motor não garante esse contrato completo. A telemetria identifica metragem inválida, mas isso não acrescenta uma rejeição de domínio à API: o denominador do preço por m² é limitado a pelo menos 1,0.
 
 ---
 
@@ -447,4 +452,4 @@ Isso garante que **toda requisição retorna os 40 campos de saída**, incluindo
 
 ## Observabilidade da API
 
-O dashboard [Previsão Imobiliária](http://localhost:3000/d/painel-previsao-imoveis) acompanha requisições, erros, latência, entradas e preços previstos por localidade. As médias do dashboard resumem os imóveis atendidos no período selecionado; os campos `valor_previsto_zona` e `valor_previsto_bairro` desta API resumem somente o lote da chamada. Consulte [a documentação de observabilidade](observabilidade.md#observabilidade-real-do-mlflow-serving) para as métricas, fontes e limitações.
+O dashboard [Previsão Imobiliária](http://localhost:3000/d/painel-previsao-imoveis) acompanha requisições, erros, latência, entradas e preços previstos por localidade. As médias do dashboard resumem os imóveis atendidos no período selecionado; os campos `valor_previsto_zona` e `valor_previsto_bairro` desta API resumem somente o lote da chamada. Consulte [a documentação de observabilidade](observabilidade.md#interpretar-serving) para as métricas, fontes e limitações.

@@ -30,3 +30,8 @@ Transformar o objetivo recebido em especificações modulares, mantendo a inten�
 
 ## Gate
 Interromper o fluxo até o usuário responder `Approved`.
+
+
+## Referência para o projeto existente
+
+Este arquivo descreve o processo de autoria do Antigravity; seus objetivos não são evidências de implementação ou homologação. Para operar a aplicação existente, consulte o [índice atual da documentação](../../docs/README.md). Para mudanças, confira primeiro o [estado de atendimento dos requisitos](../../production_artifacts/Technical_Specification.md). O workflow `/startcycle` continua reservado à sua invocação explícita, com os gates definidos naquele fluxo.

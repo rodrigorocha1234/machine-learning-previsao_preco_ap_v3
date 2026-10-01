@@ -12,3 +12,8 @@
 - Exceções customizadas com nomes em português, atributos tipados, mensagem clara e exception chaining.
 - Não capturar `Exception` indiscriminadamente.
 - Código conciso: evitar classes, métodos e comentários redundantes.
+
+
+## Escopo e verificação
+
+Este documento define requisitos de desenvolvimento; não comprova que todo o código atual já esteja conforme. O estado conhecido e as divergências estão na [especificação técnica](../production_artifacts/Technical_Specification.md) e no [relatório de qualidade](../production_artifacts/QA_Report.md). A atualização da documentação não flexibiliza estas regras nem substitui sua auditoria.

@@ -17,3 +17,8 @@ Quando o usuário executar `/startcycle <objetivo>`, seguir estritamente `.agent
 
 ## Rework loop
 Feedback do usuário ou comentários em artefatos reabrem a etapa responsável. Uma alteração arquitetural reabre @pm e @ml_architect. Alteração de regra estatística reabre @ml_architect e @ml_engineer. Alteração de infraestrutura reabre @mlops e @devops.
+
+
+## Referência para o projeto existente
+
+Este arquivo descreve o processo de autoria do Antigravity; seus objetivos não são evidências de implementação ou homologação. Para operar a aplicação existente, consulte o [índice atual da documentação](../../docs/README.md). Para mudanças, confira primeiro o [estado de atendimento dos requisitos](../../production_artifacts/Technical_Specification.md). O workflow `/startcycle` continua reservado à sua invocação explícita, com os gates definidos naquele fluxo.
