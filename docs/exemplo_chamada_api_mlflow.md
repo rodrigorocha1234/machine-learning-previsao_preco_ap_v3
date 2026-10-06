@@ -16,6 +16,7 @@
 4. [Resposta Completa da API](#4-resposta-completa-da-api)
 5. [Dicionário de Campos de Saída](#5-dicionário-de-campos-de-saída)
 6. [Como Interpretar os Resultados](#6-como-interpretar-os-resultados)
+   - [Exemplos para a equipe de negócio](#exemplos-para-a-equipe-de-negócio)
 7. [Lógica de Fallback Hierárquico](#7-lógica-de-fallback-hierárquico)
 8. [Resumo dos campos](#8-resumo-dos-40-campos-de-saída)
 9. [Observabilidade da API](#observabilidade-da-api)
@@ -366,21 +367,23 @@ ZONA SUL:
   indice_imovel_zona     = 1,10x          ← m² levemente acima da mediana da zona
 
 JARDIM BOTÂNICO:
-  bairro_mediana_mercado = R$ 490.000,00  ← mediana no bairro (fallback = zona)
+  bairro_mediana_mercado = R$ 490.000,00  ← referência retornada para o bairro
   bairro_media_mercado   = R$ 670.717,08  ← média no bairro
   diferenca_perc_bairro  = -5,86%         ← imóvel está abaixo da média do bairro
-  bairro_faixa_segura    = R$ 441.000 – R$ 490.000  ← range saudável de negociação
+  bairro_faixa_segura_*  = R$ 441.000 – R$ 490.000  ← 90% a 100% da mediana histórica
 ```
 
 ### Guia de interpretação do `indice_imovel_*`
 
 | Faixa | Interpretação |
 | :--- | :--- |
-| `< 0.85` | Imóvel muito barato em relação ao mercado desse nível |
-| `0.85 – 1.00` | Imóvel abaixo da mediana (oportunidade) |
-| `1.00 – 1.15` | Imóvel alinhado com o mercado |
-| `1.15 – 1.30` | Imóvel acima da mediana (premium) |
-| `> 1.30` | Imóvel significativamente acima do mercado |
+| `< 0.85` | Preço/m² previsto mais de 15% abaixo da mediana histórica |
+| `0.85 ≤ índice < 1.00` | Preço/m² previsto até 15% abaixo da mediana histórica |
+| `1.00 ≤ índice ≤ 1.15` | Preço/m² previsto igual ou até 15% acima da mediana histórica |
+| `1.15 < índice ≤ 1.30` | Preço/m² previsto mais de 15% e até 30% acima da mediana histórica |
+| `> 1.30` | Preço/m² previsto mais de 30% acima da mediana histórica |
+
+Essas faixas são uma convenção de leitura deste guia; não são classificações devolvidas pela API. O índice compara o preço/m² **previsto**, não o valor anunciado pelo proprietário.
 
 ### Guia de interpretação do `diferenca_perc_*`
 
@@ -388,7 +391,114 @@ JARDIM BOTÂNICO:
 | :--- | :--- |
 | Positivo (`+`) | Imóvel previsto ACIMA da média de mercado desse nível |
 | Zero | Imóvel alinhado com a média |
-| Negativo (`-`) | Imóvel previsto ABAIXO da média desse nível — possível oportunidade |
+| Negativo (`-`) | Preço previsto ABAIXO da média histórica desse nível |
+
+
+### Exemplos para a equipe de negócio
+
+Os cenários a seguir usam **valores fictícios para explicar os cálculos**. São independentes da resposta ilustrativa da seção 4. As referências históricas vêm da base de desenvolvimento do modelo carregado, não de uma consulta ao mercado em tempo real.
+
+#### Caso 1 — Explicar a estimativa de um imóvel ao proprietário
+
+Considere um apartamento no Jardim Botânico, Zona Sul, com 80 m², 3 quartos, 2 banheiros e 2 vagas. Suponha que a API devolva:
+
+| Campo da API | Valor ilustrativo | Leitura para o atendimento |
+| :--- | ---: | :--- |
+| `valor_previsto` | R$ 600.000,00 | Estimativa individual para as características informadas |
+| `valor_m2_previsto` | R$ 7.500,00/m² | R$ 600.000 ÷ 80 m² |
+| `bairro_media_mercado` | R$ 500.000,00 | Média dos preços totais na referência histórica do bairro |
+| `bairro_mediana_mercado` | R$ 480.000,00 | Valor central dos preços totais nessa referência |
+| `bairro_mediana_m2_mercado` | R$ 6.000,00/m² | Valor central dos preços por m² nessa referência |
+| `diferenca_perc_bairro` | 20,00 | Previsão total 20% acima da média histórica: `(600.000 ÷ 500.000 − 1) × 100` |
+| `indice_imovel_bairro` | 1,25 | Previsão por m² 25% acima da mediana histórica por m²: `7.500 ÷ 6.000` |
+
+**Como comunicar:** “Para as características informadas, o modelo estima R$ 600 mil. Esse valor total está 20% acima da média histórica do bairro; por metro quadrado, a estimativa está 25% acima da mediana histórica.”
+
+Os percentuais diferem porque usam medidas e referências distintas: preço total versus média total; preço/m² versus mediana por m². Nenhum dos dois mede a valorização do imóvel ao longo do tempo. A base do bairro reúne imóveis com características variadas, não apenas apartamentos idênticos ao avaliado.
+
+#### Caso 2 — Comparar o preço anunciado com a previsão
+
+No mesmo exemplo, suponha que o proprietário anuncie R$ 660.000,00. Esse preço vem do cadastro comercial: **não é um dos seis campos de entrada nem um campo devolvido pela API**.
+
+| Informação | Valor | Origem |
+| :--- | ---: | :--- |
+| Preço anunciado | R$ 660.000,00 | Cadastro comercial |
+| Preço previsto | R$ 600.000,00 | `valor_previsto` |
+| Diferença em reais | R$ 60.000,00 | Cálculo da equipe: anunciado − previsto |
+| Diferença sobre a previsão | 10,00% | Cálculo da equipe: `(660.000 ÷ 600.000 − 1) × 100` |
+
+**Como comunicar:** “O anúncio está R$ 60 mil, ou 10%, acima da estimativa do modelo.” Isso é diferente de `diferenca_perc_bairro`, que continua sendo 20% no caso 1 e compara a previsão com a média histórica.
+
+Para a análise comercial, registre também características que a entrada atual não recebe, como conservação, andar e condomínio. A diferença calculada ajuda a organizar a revisão do anúncio; não determina automaticamente o preço a praticar.
+
+#### Caso 3 — Ler as simulações de desconto corretamente
+
+Ainda no caso 1, a mediana histórica do bairro é R$ 480.000,00. A API usa essa mediana como base dos seguintes campos:
+
+| Campo da API | Cálculo | Resultado |
+| :--- | :--- | ---: |
+| `bairro_desconto_5` | R$ 480.000 × 0,95 | R$ 456.000,00 |
+| `bairro_desconto_10` | R$ 480.000 × 0,90 | R$ 432.000,00 |
+| `bairro_desconto_15` | R$ 480.000 × 0,85 | R$ 408.000,00 |
+| `bairro_faixa_segura_piso` | R$ 480.000 × 0,90 | R$ 432.000,00 |
+| `bairro_faixa_segura_teto` | R$ 480.000 × 1,00 | R$ 480.000,00 |
+
+**Como comunicar:** “O cenário de 10% abaixo da mediana histórica do bairro corresponde a R$ 432 mil.”
+
+Se a equipe quiser simular 10% de desconto sobre a **previsão individual**, o cálculo separado será `600.000 × 0,90 = R$ 540.000,00`. Sobre o **anúncio** do caso 2, será `660.000 × 0,90 = R$ 594.000,00`. Esses cálculos não correspondem ao campo `bairro_desconto_10`.
+
+A faixa de R$ 432 mil a R$ 480 mil é uma regra sobre a mediana histórica. Apesar do nome dos campos, não representa a incerteza da previsão de R$ 600 mil nem um limite obrigatório para a negociação.
+
+#### Caso 4 — Resumir uma carteira por zona e bairro
+
+Retomando os quatro imóveis do exemplo numérico da seção 3, a carteira enviada tem previsões de R$ 600 mil e R$ 400 mil no Jardim Botânico, R$ 800 mil na Nova Aliança e R$ 300 mil no Centro.
+
+| Recorte da carteira enviada | Quantidade | Previsão média por imóvel | Soma das previsões individuais |
+| :--- | ---: | ---: | ---: |
+| Zona Sul / Jardim Botânico | 2 | R$ 500.000,00 | R$ 1.000.000,00 |
+| Zona Sul / Nova Aliança | 1 | R$ 800.000,00 | R$ 800.000,00 |
+| Zona Sul / todos os bairros enviados | 3 | R$ 600.000,00 | R$ 1.800.000,00 |
+| Centro / Centro | 1 | R$ 300.000,00 | R$ 300.000,00 |
+| Carteira completa | 4 | R$ 525.000,00 | R$ 2.100.000,00 |
+
+As linhas de zona e de carteira são subtotais e total; não devem ser somadas às linhas dos bairros. A soma é calculada pela equipe a partir de `valor_previsto` de cada imóvel; a API não devolve um campo de valor total da carteira. Essa soma resume estimativas, não receita realizada.
+
+**Como comunicar:** “Nos três imóveis da Zona Sul enviados nesta análise, a estimativa média é R$ 600 mil. O total estimado desses três imóveis é R$ 1,8 milhão.”
+
+`valor_previsto_zona` será R$ 600 mil nas três linhas da Zona Sul. `valor_previsto_bairro` será R$ 500 mil nas duas linhas do Jardim Botânico e R$ 800 mil na linha da Nova Aliança. O primeiro imóvel mantém sua previsão individual de R$ 600 mil; as médias não representam outros imóveis simulados.
+
+Se a chamada contiver somente esse primeiro imóvel, suas médias de zona e bairro serão ambas R$ 600 mil. Os valores iguais são esperados nesse lote. Já `bairro_media_mercado` é uma referência histórica e, com a mesma versão carregada e a mesma localização, não muda por retirar outros imóveis da chamada.
+
+Para comparar carteiras ao longo do tempo, mantenha claros o conjunto de imóveis e a versão do modelo. Uma mudança na média pode decorrer da composição dos imóveis enviados.
+
+#### Caso 5 — Interpretar o preço médio por metro quadrado
+
+Em outro lote ilustrativo, dois imóveis do mesmo bairro têm estas previsões:
+
+| Imóvel | Área | Previsão individual | Previsão por m² |
+| :--- | ---: | ---: | ---: |
+| A | 50 m² | R$ 400.000,00 | R$ 8.000,00/m² |
+| B | 100 m² | R$ 600.000,00 | R$ 6.000,00/m² |
+
+`valor_m2_previsto_bairro` será `(8.000 + 6.000) ÷ 2 = R$ 7.000,00/m²`: cada imóvel recebe o mesmo peso nessa média. Dividir a soma dos preços pela soma das áreas daria `1.000.000 ÷ 150 = R$ 6.666,67/m²`, uma medida diferente, calculada separadamente.
+
+**Como comunicar:** “A média dos preços por metro quadrado previstos para os dois imóveis enviados é R$ 7 mil.”
+
+#### Caso 6 — Explicar uma referência de bairro ausente
+
+Se o bairro informado não estiver na tabela histórica, mas a zona estiver, a API utiliza as referências da zona nos campos históricos do bairro. Por exemplo, com mediana da zona de R$ 480 mil, `bairro_mediana_mercado` também será R$ 480 mil e `bairro_desconto_10` será R$ 432 mil.
+
+A previsão individual continua sendo calculada pelo modelo, e `valor_previsto_bairro` continua sendo a média das previsões do grupo enviado. O fallback das referências não transforma a previsão individual na mediana da zona.
+
+Os 40 campos atuais não incluem um indicador explícito de fallback nem a quantidade de amostras históricas. Valores iguais entre zona e bairro, por si só, não comprovam que houve fallback; as estatísticas também podem coincidir. Para afirmar a origem da referência em um relatório, confirme a presença da localidade na base de referência do modelo.
+
+#### Modelo de resumo para atendimento
+
+Usando os casos 1 e 2:
+
+> Apartamento de 80 m², 3 quartos, 2 banheiros e 2 vagas, no Jardim Botânico / Zona Sul. Estimativa do modelo: R$ 600.000,00, equivalente a R$ 7.500,00/m². O preço anunciado de R$ 660.000,00 está 10% acima dessa estimativa. A previsão está 20% acima da média histórica de preços totais do bairro. As referências refletem a base utilizada pelo modelo; as características adicionais do imóvel devem compor a análise comercial.
+
+No registro interno, associe esse resumo à data da consulta, à versão efetivamente carregada no serving e ao identificador do imóvel no cadastro comercial. Esses dados de controle não fazem parte dos 40 campos da resposta; o alias `champion`, sozinho, não identifica permanentemente uma versão.
 
 ---
 

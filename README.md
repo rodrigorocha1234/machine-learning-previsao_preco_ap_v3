@@ -6,6 +6,8 @@ Projeto Python de regressão imobiliária com validação cruzada aninhada, MLfl
 
 | Necessidade | Documento |
 | --- | --- |
+| Visualizar documentação interativa com simulador | [✨ Portal HTML Interativo](docs/index.html) |
+| Passo a passo para executar o projeto | [Guia de execução](docs/como_executar_o_projeto.md) |
 | Preparar ambiente e executar serviços | [Implantação e operação](production_artifacts/Deployment.md) |
 | Chamar a API e interpretar seus 40 campos | [Contrato da API](docs/exemplo_chamada_api_mlflow.md) |
 | Entender treino, tuning e desvio padrão | [Validação cruzada](docs/validacao_cruzada_e_tuning.md) |

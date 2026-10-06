@@ -1,8 +1,9 @@
 modelos:
   linear_regression:
-    ativo: false
+    ativo: true
     parametros:
       fit_intercept: true
+      n_jobs: 3
     tuning:
       estrategia: nenhum
       parametros: {}
@@ -15,32 +16,32 @@ modelos:
       estrategia: grid
       scoring: neg_root_mean_squared_error
       parametros:
-        modelo__alpha: [0.1]
-        modelo__solver: [auto, cholesky]
+        modelo__alpha: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+        modelo__solver: [auto, cholesky, lsqr]
 
   lasso:
-    ativo: false
+    ativo: true
     parametros:
-      max_iter: 100
+      max_iter: 2000
       random_state: 42
     tuning:
       estrategia: grid
       scoring: neg_root_mean_squared_error
       parametros:
-        modelo__alpha: [0.01]
+        modelo__alpha: [0.001, 0.01, 0.1, 1.0, 10.0]
         modelo__selection: [cyclic, random]
 
   elastic_net:
-    ativo: false
+    ativo: true
     parametros:
-      max_iter: 100
+      max_iter: 2000
       random_state: 42
     tuning:
       estrategia: grid
       scoring: neg_root_mean_squared_error
       parametros:
-        modelo__alpha: [0.01]
-        modelo__l1_ratio: [0.2]
+        modelo__alpha: [0.01, 0.1, 1.0, 10.0]
+        modelo__l1_ratio: [0.1, 0.3, 0.5, 0.7, 0.9]
 
   arvore_decisao:
     ativo: true
@@ -50,9 +51,9 @@ modelos:
       estrategia: grid
       scoring: neg_root_mean_squared_error
       parametros:
-        modelo__max_depth: [3]
-        modelo__min_samples_split: [2]
-        modelo__min_samples_leaf: [1]
+        modelo__max_depth: [4, 6, 8, 12, null]
+        modelo__min_samples_split: [2, 5, 10]
+        modelo__min_samples_leaf: [1, 2, 4]
 
   random_forest:
     ativo: true
@@ -61,76 +62,82 @@ modelos:
       n_jobs: 3
     tuning:
       estrategia: random
-      n_iter: 2
+      n_iter: 20
       scoring: neg_root_mean_squared_error
       random_state: 42
       parametros:
-        modelo__n_estimators: [100]
-        modelo__max_depth: [3, 5]
-        modelo__min_samples_split: [2]
-        modelo__min_samples_leaf: [1]
-        modelo__max_features: [sqrt]
+        modelo__n_estimators: [100, 200, 300]
+        modelo__max_depth: [8, 12, 16, 20, null]
+        modelo__min_samples_split: [2, 5, 10]
+        modelo__min_samples_leaf: [1, 2, 4]
+        modelo__max_features: [1.0, sqrt, 0.5]
 
   svr:
-    ativo: false
+    ativo: true
     parametros: {}
     tuning:
       estrategia: random
-      n_iter: 5
+      n_iter: 15
       scoring: neg_root_mean_squared_error
       random_state: 42
       parametros:
-        modelo__C: [1.0]
-        modelo__epsilon: [0.05]
-        modelo__gamma: [scale]
+        modelo__C: [0.1, 1.0, 10.0, 100.0, 1000.0]
+        modelo__epsilon: [0.01, 0.05, 0.1, 0.2]
+        modelo__gamma: [scale, auto, 0.01, 0.1]
         modelo__kernel: [rbf]
 
   rede_neural:
-    ativo: false
+    ativo: true
     parametros:
-      max_iter: 5
+      max_iter: 250
       random_state: 42
+      early_stopping: true
     tuning:
       estrategia: random
-      n_iter: 8
+      n_iter: 15
       scoring: neg_root_mean_squared_error
       random_state: 42
       parametros:
-        modelo__hidden_layer_sizes: [[64]]
-        modelo__activation: [relu]
-        modelo__alpha: [0.001]
-        modelo__learning_rate: [constant]
+        modelo__hidden_layer_sizes: [[64], [128, 64], [64, 32], [128, 64, 32]]
+        modelo__activation: [relu, tanh]
+        modelo__alpha: [0.0001, 0.001, 0.01, 0.1]
+        modelo__learning_rate_init: [0.001, 0.005, 0.01]
 
   xgboost:
-    ativo: false
+    ativo: true
     parametros:
       random_state: 42
       n_jobs: 3
     tuning:
       estrategia: random
-      n_iter: 5
+      n_iter: 25
       scoring: neg_root_mean_squared_error
       random_state: 42
       parametros:
-        modelo__n_estimators: [100]
-        modelo__max_depth: [3]
-        modelo__learning_rate: [0.03]
-        modelo__subsample: [0.8]
-        modelo__colsample_bytree: [0.8]
+        modelo__n_estimators: [100, 200, 300]
+        modelo__max_depth: [3, 5, 7, 9]
+        modelo__learning_rate: [0.01, 0.03, 0.05, 0.1]
+        modelo__subsample: [0.7, 0.85, 1.0]
+        modelo__colsample_bytree: [0.6, 0.8, 1.0]
+        modelo__min_child_weight: [1, 3, 5]
+        modelo__reg_alpha: [0.0, 0.1, 1.0]
+        modelo__reg_lambda: [1.0, 5.0, 10.0]
 
   lightgbm:
-    ativo: false
+    ativo: true
     parametros:
       random_state: 42
       n_jobs: 3
     tuning:
       estrategia: random
-      n_iter: 2
+      n_iter: 25
       scoring: neg_root_mean_squared_error
       random_state: 42
       parametros:
-        modelo__n_estimators: [100]
-        modelo__num_leaves: [15]
-        modelo__learning_rate: [0.03]
-        modelo__max_depth: [3]
-        modelo__subsample: [0.8]
+        modelo__n_estimators: [100, 200, 300]
+        modelo__num_leaves: [15, 31, 63, 127]
+        modelo__max_depth: [-1, 6, 8, 12]
+        modelo__learning_rate: [0.01, 0.03, 0.05, 0.1]
+        modelo__min_child_samples: [10, 20, 30, 50]
+        modelo__subsample: [0.7, 0.85, 1.0]
+        modelo__colsample_bytree: [0.6, 0.8, 1.0]

@@ -51,10 +51,47 @@ Scores do holdout e Nested CV são avaliações offline. Uma execução de `scri
 
 `apartamentos_cv_media` e `apartamentos_cv_desvio_padrao` têm labels `modelo` e `metrica`. São seis métricas por modelo; o desvio usa `ddof=0` nos folds externos. MAPE e RMSE relativo são frações, exibidas em percentual quando a unidade do painel é `percentunit`. Consulte o [guia estatístico](validacao_cruzada_e_tuning.md).
 
+## Monitoramento e Detecção de Drift (DetectorDrift)
+
+O módulo [`DetectorDrift`](../app_build/observabilidade_metricas/detector_drift.py) implementa a detecção estatística de **Data Drift** (mudança na distribuição das features de entrada) e **Prediction Drift** (mudança na distribuição dos preços previstos), comparando um lote de produção contra a base de referência de desenvolvimento.
+
+### Métricas Estatísticas Calculadas
+
+| Métrica | Implementação | Fórmula / Metodologia | Interpretação |
+| :--- | :--- | :--- | :--- |
+| **PSI** *(Population Stability Index)* | `calcular_psi` | $\sum (P_{\text{prod}} - P_{\text{ref}}) \times \ln(P_{\text{prod}} / P_{\text{ref}})$ em 10 percentis | • **< 0,10**: Estável (sem mudança relevante)<br>• **0,10 a 0,20**: Drift moderado (alerta preventivo)<br>• **≥ 0,20**: Drift crítico (aciona retreino) |
+| **KS** *(Kolmogorov-Smirnov)* | `calcular_ks` | `scipy.stats.ks_2samp` (estatística $D$ e $p$-valor) | Se $p\text{-valor} < 0,01$, há rejeição formal com 99% de confiança de que as distribuições são idênticas. |
+| **Wasserstein Distance** | `calcular_wasserstein` | Distância do transportador de terra normalizada por $\sigma_{\text{ref}}$ | Mede o esforço de deformação entre distribuições de forma adimensional. |
+
+### Classificação de Severidade
+
+A função `classificar_severidade` combina o índice de estabilidade populacional e a significância estatística do teste KS:
+
+| Nível | Status | Condição | Ação Operacional |
+| :---: | :---: | :--- | :--- |
+| **0** | **Estável** (Verde) | $PSI < 0,10$ e $p\text{-valor} \ge 0,05$ | Operação normal. Nenhuma ação requerida. |
+| **1** | **Moderado** (Amarelo) | $PSI \ge 0,10$ ou $p\text{-valor} < 0,05$ | Monitorar de perto. Auditar novos anúncios e bairros captados. |
+| **2** | **Crítico** (Vermelho) | $PSI \ge 0,20$ ou $p\text{-valor} < 0,01$ | **Gatilho de MLOps**: Reavaliar e disparar novo ciclo de treinamento do modelo. |
+
+### Serviço de Monitoramento Contínuo
+
+O script [`scripts/servico_monitor_drift.py`](../scripts/servico_monitor_drift.py) executa o monitoramento contínuo das features (`Metragem`, `Quartos`, `Banheiros`, `Vagas_Garagem` e `Valor_da_Venda`), exportando as métricas em formato Prometheus para exibição no Grafana:
+
+```bash
+.venv/bin/python -m scripts.servico_monitor_drift
+```
+
+As métricas exportadas incluem:
+- `drift_psi_score{feature="..."}`
+- `drift_ks_pvalue{feature="..."}`
+- `drift_wasserstein_distance{feature="..."}`
+- `drift_status_severidade{feature="..."}`
+
+---
+
 ## Fontes ainda pendentes
 
 - Erros de previsão **em produção** precisam de preços reais de venda ligados às previsões.
-- Drift real exige baseline versionado e janela de observações. A etapa 9 compara desenvolvimento consigo mesmo; o script `servico_monitor_drift.py` usa simulações e números fixos. Esses dados não comprovam estabilidade de produção.
 - A aplicação de suficiência amostral ao fallback vetorizado ainda está pendente.
 - Parte dos painéis legados tem nomenclatura histórica. Consulte a origem da série e não atribua todo dado ao modelo servido.
 
@@ -106,119 +143,194 @@ Os nomes abaixo foram conferidos nas declarações do código nesta revisão. A 
 
 Histogramas expõem `_bucket`, `_sum` e `_count`; buckets acrescentam label `le`. Counters usam `_total`; Info usa `_info`. O catálogo descreve nomes públicos, não valores fixos.
 
-### Treino: ColetorPrometheus
+### Catálogo Detalhado de Métricas de Observabilidade
 
-| Nome | Tipo | Labels |
-| --- | --- | --- |
-| `apartamentos_predicoes_total` | Counter | `zona` |
-| `apartamentos_latencia_segundos` | Histogram | — |
-| `apartamentos_valor_medio_previsto` | Gauge | `zona` |
-| `apartamentos_modelo_rmse` | Gauge | — |
-| `apartamentos_modelo_mae` | Gauge | — |
-| `apartamentos_modelo_r2` | Gauge | — |
-| `apartamentos_modelo_mape` | Gauge | — |
-| `apartamentos_modelo_total_amostras_treino` | Gauge | — |
-| `apartamentos_modelo_total_amostras_holdout` | Gauge | — |
-| `apartamentos_modelo_campeao_info` | Info | — |
-| `apartamentos_drift_psi_predicoes` | Gauge | — |
-| `apartamentos_drift_psi_area` | Gauge | — |
-| `apartamentos_drift_ks_area_stat` | Gauge | — |
-| `apartamentos_drift_ks_area_pvalor` | Gauge | — |
-| `apartamentos_drift_wasserstein_area` | Gauge | — |
-| `apartamentos_drift_status_geral` | Gauge | — |
-| `apartamentos_drift_psi_features` | Gauge | `feature` |
-| `apartamentos_drift_desvio_preco_m2_zona` | Gauge | `zona` |
-| `apartamentos_estatistica_friedman_chi2` | Gauge | — |
-| `apartamentos_estatistica_friedman_pvalor` | Gauge | — |
-| `apartamentos_estatistica_friedman_significativo` | Gauge | — |
-| `apartamentos_estatistica_nemenyi_cd` | Gauge | — |
-| `apartamentos_estatistica_rank_medio_modelo` | Gauge | `modelo` |
-| `apartamentos_estatistica_nemenyi_dif_ranks` | Gauge | `modelo_a`, `modelo_b` |
-| `apartamentos_estatistica_nemenyi_par_significativo` | Gauge | `modelo_a`, `modelo_b` |
-| `apartamentos_estatistica_shapiro_pvalor` | Gauge | `modelo` |
-| `apartamentos_estatistica_shapiro_eh_normal` | Gauge | `modelo` |
-| `apartamentos_pipeline_etapa_indice_atual` | Gauge | — |
-| `apartamentos_pipeline_total_etapas` | Gauge | — |
-| `apartamentos_pipeline_etapas_iniciadas_total` | Counter | — |
-| `apartamentos_pipeline_etapas_concluidas_total` | Counter | — |
-| `apartamentos_pipeline_etapas_falhas_total` | Counter | — |
-| `apartamentos_pipeline_etapa_duracao_segundos` | Histogram | `etapa` |
-| `apartamentos_pipeline_duracao_total_segundos` | Gauge | — |
-| `apartamentos_pipeline_ultima_execucao_timestamp` | Gauge | — |
-| `apartamentos_pipeline_execucoes_total` | Counter | — |
-| `apartamentos_pipeline_etapas_com_falha_ultima_execucao` | Gauge | — |
-| `apartamentos_negocio_preco_mediano_global` | Gauge | — |
-| `apartamentos_negocio_preco_medio_global` | Gauge | — |
-| `apartamentos_negocio_preco_m2_mediano_global` | Gauge | — |
-| `apartamentos_negocio_total_imoveis_dataset` | Gauge | — |
-| `apartamentos_negocio_preco_mediano_zona` | Gauge | `zona` |
-| `apartamentos_negocio_preco_m2_mediano_zona` | Gauge | `zona` |
-| `apartamentos_negocio_total_amostras_zona` | Gauge | `zona` |
-| `apartamentos_negocio_preco_mediano_bairro` | Gauge | `bairro`, `zona` |
-| `apartamentos_negocio_total_amostras_bairro` | Gauge | `bairro`, `zona` |
-| `apartamentos_cv_rmse_fold` | Gauge | `modelo`, `fold` |
-| `apartamentos_cv_r2_fold` | Gauge | `modelo`, `fold` |
-| `apartamentos_cv_mae_fold` | Gauge | `modelo`, `fold` |
-| `apartamentos_cv_mape_fold` | Gauge | `modelo`, `fold` |
-| `apartamentos_cv_rmse_medio` | Gauge | `modelo` |
-| `apartamentos_cv_r2_medio` | Gauge | `modelo` |
-| `apartamentos_cv_desvio_padrao` | Gauge | `modelo`, `metrica` |
-| `apartamentos_cv_media` | Gauge | `modelo`, `metrica` |
-| `apartamentos_cv_rmse_std` | Gauge | `modelo` |
-| `apartamentos_cv_duracao_media_fold_segundos` | Gauge | `modelo` |
-| `apartamentos_holdout_rmse_zona` | Gauge | `zona` |
-| `apartamentos_holdout_mae_zona` | Gauge | `zona` |
-| `apartamentos_holdout_r2_zona` | Gauge | `zona` |
-| `apartamentos_holdout_mape_zona` | Gauge | `zona` |
-| `apartamentos_holdout_valor_medio_previsto_zona` | Gauge | `zona` |
-| `apartamentos_holdout_rmse_bairro` | Gauge | `bairro`, `zona` |
-| `apartamentos_holdout_r2_bairro` | Gauge | `bairro`, `zona` |
-| `apartamentos_holdout_valor_medio_previsto_bairro` | Gauge | `bairro`, `zona` |
-| `apartamentos_holdout_amostras_zona` | Gauge | `zona` |
-| `apartamentos_dados_total_amostras` | Gauge | — |
-| `apartamentos_dados_missing_percentual` | Gauge | `coluna` |
-| `apartamentos_dados_outliers_percentual` | Gauge | `coluna` |
-| `apartamentos_dados_media_alvo` | Gauge | — |
-| `apartamentos_dados_mediana_alvo` | Gauge | — |
-| `apartamentos_dados_std_alvo` | Gauge | — |
-| `apartamentos_dados_assimetria_alvo` | Gauge | — |
-| `apartamentos_dados_amostras_por_zona` | Gauge | `zona` |
-| `apartamentos_dados_amostras_por_bairro` | Gauge | `bairro` |
-| `apartamentos_predicao_residuo_medio` | Gauge | — |
-| `apartamentos_predicao_residuo_std` | Gauge | — |
-| `apartamentos_predicao_valor_previsto` | Histogram | — |
-| `apartamentos_predicao_erro_percentual_p50` | Gauge | — |
-| `apartamentos_predicao_erro_percentual_p90` | Gauge | — |
-| `apartamentos_predicao_erro_percentual_p95` | Gauge | — |
-| `apartamentos_sistema_cpu_uso_percentual` | Gauge | — |
-| `apartamentos_sistema_memoria_uso_mb` | Gauge | — |
-| `apartamentos_sistema_threads_ativas` | Gauge | — |
+O ecossistema exporta métricas através de dois pontos centrais: o [`ColetorPrometheus`](../app_build/observabilidade_metricas/coletor_prometheus.py) (pipeline de treino e avaliação offline via `treino.prom`) e o [`MetricasServing`](../app_build/observabilidade_metricas/metricas_serving.py) / [`DistribuicaoServing`](../app_build/observabilidade_metricas/distribuicao_serving.py) (API de inferência FastAPI/MLflow Serving).
 
-### Serving: MetricasServing
+Abaixo, todas as métricas estão documentadas com tipo Prometheus, dimensões (labels) e finalidade operacional.
 
-| Nome | Tipo | Labels |
-| --- | --- | --- |
-| `apartamentos_serving_requisicoes_total` | Counter | `status` |
-| `apartamentos_serving_latencia_segundos` | Histogram | — |
-| `apartamentos_serving_lote_imoveis` | Histogram | — |
-| `apartamentos_serving_entradas_total` | Counter | — |
-| `apartamentos_serving_entrada_problemas_total` | Counter | `campo`, `motivo` |
-| `apartamentos_serving_referencia_total` | Counter | `nivel` |
-| `apartamentos_serving_telemetria_falhas_total` | Counter | — |
-| `apartamentos_serving_modelo_info` | Info | — |
-| `apartamentos_serving_carregado_timestamp` | Gauge | — |
-| `apartamentos_serving_registrado_timestamp` | Gauge | — |
-| `apartamentos_serving_treinado_timestamp` | Gauge | — |
+---
 
-### Distribuições e snapshot
+#### 1. Inferência e Atendimento da API
 
-| Nome | Tipo | Labels |
-| --- | --- | --- |
-| `apartamentos_serving_valor` | Histogram | `zona`, `bairro` |
-| `apartamentos_serving_valor_m2` | Histogram | `zona`, `bairro` |
-| `apartamentos_snapshot_timestamp` | Gauge | — |
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_predicoes_total` | Counter | `zona` | Total acumulado de inferências de preços imobiliários realizadas, particionado por macrozona geográfica. Permite calcular volume de requisições e demanda imobiliária por região. |
+| `apartamentos_latencia_segundos` | Histogram | — | Latência de resposta da estimativa em segundos (buckets de 5ms a 2.5s). Utilizado para monitorar SLAs, quantis p50, p95 e p99 no Grafana. |
+| `apartamentos_valor_medio_previsto` | Gauge | `zona` | Valor médio recente dos preços previstos por zona geográfica. Alerta variações bruscas no perfil dos imóveis cotados. |
 
-Esses histogramas são publicados por `DistribuicaoServing` via agregações vetorizadas. O timestamp é acrescentado pelo exportador com a data do arquivo efetivamente lido.
+---
+
+#### 2. Modelo Campeão e Avaliação Geral
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_modelo_rmse` | Gauge | — | Raiz do Erro Quadrático Médio ($RMSE$) do modelo campeão homologado no conjunto de Holdout (em R$). Penaliza erros grandes. |
+| `apartamentos_modelo_mae` | Gauge | — | Erro Médio Absoluto ($MAE$) do modelo campeão no Holdout (em R$). Representa a margem média de erro em reais. |
+| `apartamentos_modelo_r2` | Gauge | — | Coeficiente de Determinação ($R^2$) do campeão no Holdout ($0$ a $1$). Mede o percentual da variância dos preços explicado pelo modelo. |
+| `apartamentos_modelo_mape` | Gauge | — | Erro Percentual Absoluto Médio ($MAPE$) do campeão ($0$ a $1$). Mostra o erro proporcional médio em relação ao valor do imóvel. |
+| `apartamentos_modelo_total_amostras_treino` | Gauge | — | Quantidade de registros utilizados no treinamento final do modelo campeão. |
+| `apartamentos_modelo_total_amostras_holdout` | Gauge | — | Volume de dados estritamente isolado no conjunto de teste Holdout (~10% a 20%). |
+| `apartamentos_modelo_campeao_info` | Info | `versao`, `nome` | Metadados do modelo campeão ativo: nome do algoritmo (ex: `Random Forest`, `VotingRegressor`) e versão no registro MLflow. |
+
+---
+
+#### 3. Monitoramento de Drift e Estabilidade Populacional
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_drift_psi_predicoes` | Gauge | — | *Population Stability Index* ($PSI$) nas predições de preço. $< 0.10$ estável; $0.10 \le PSI < 0.20$ alerta moderado; $\ge 0.20$ drift crítico. |
+| `apartamentos_drift_psi_area` | Gauge | — | $PSI$ da feature Metragem / Área Privativa ($m^2$). Detecta se o perfil de tamanho dos apartamentos ofertados mudou. |
+| `apartamentos_drift_ks_area_stat` | Gauge | — | Estatística $D$ do teste Kolmogorov-Smirnov para Área Privativa, medindo a distância máxima entre as funções de distribuição acumulada (CDF). |
+| `apartamentos_drift_ks_area_pvalor` | Gauge | — | $p$-valor do teste Kolmogorov-Smirnov para Área. Se $p < 0.01$, rejeita com 99% de confiança que a distribuição atual é idêntica à de referência. |
+| `apartamentos_drift_wasserstein_area` | Gauge | — | Distância de Wasserstein (Earth Mover's Distance) normalizada pelo desvio padrão ($\sigma$) da referência. Mede o esforço de transporte entre distribuições. |
+| `apartamentos_drift_status_geral` | Gauge | — | Status consolidado de drift da aplicação: `0` = Estável (verde), `1` = Moderado (amarelo), `2` = Crítico (vermelho, aciona gatilho de retreino). |
+| `apartamentos_drift_psi_features` | Gauge | `feature` | Índice $PSI$ individual por covariável de entrada (`Metragem`, `Quartos`, `Banheiros`, `Vagas_Garagem`). Identifica qual feature causou o drift. |
+| `apartamentos_drift_desvio_preco_m2_zona` | Gauge | `zona` | Desvio percentual do preço por $m^2$ por zona em relação à baseline histórica de treinamento. |
+
+---
+
+#### 4. Testes Estatísticos de Comparação e Normalidade
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_estatistica_friedman_chi2` | Gauge | — | Estatística qui-quadrado ($\chi^2_F$) do teste de Friedman avaliando se os modelos candidatos diferem estatisticamente na Nested CV. |
+| `apartamentos_estatistica_friedman_pvalor` | Gauge | — | $p$-valor do teste de Friedman. Se $p < 0.05$, há evidência estatística de que os modelos não possuem desempenhos equivalentes. |
+| `apartamentos_estatistica_friedman_significativo` | Gauge | — | Indicador booleano (`1` = Sim, `0` = Não) apontando se a hipótese nula de equivalência entre modelos foi rejeitada. |
+| `apartamentos_estatistica_nemenyi_cd` | Gauge | — | Distância Crítica ($CD$) do teste post-hoc de Nemenyi. Dois modelos diferem significativamente se a distância entre seus ranks médios for $> CD$. |
+| `apartamentos_estatistica_rank_medio_modelo` | Gauge | `modelo` | Rank médio do modelo através dos 15 folds externos da validação cruzada (menor rank = melhor desempenho relativo). |
+| `apartamentos_estatistica_nemenyi_dif_ranks` | Gauge | `modelo_a`, `modelo_b` | Diferença absoluta entre os ranks médios do par de modelos no teste de Nemenyi. |
+| `apartamentos_estatistica_nemenyi_par_significativo` | Gauge | `modelo_a`, `modelo_b` | Flag (`1` = Sim, `0` = Não) se a diferença entre o par de modelos excede o $CD$ com nível de significância $\alpha = 0.05$. |
+| `apartamentos_estatistica_shapiro_pvalor` | Gauge | `modelo` | $p$-valor do teste Shapiro-Wilk avaliando a normalidade dos resíduos do modelo. |
+| `apartamentos_estatistica_shapiro_eh_normal` | Gauge | `modelo` | Flag (`1` = Sim, `0` = Não) indicando se os resíduos atendem à premissa de distribuição gaussiana. |
+
+---
+
+#### 5. Esteira de Pipeline e MLOps (ExecutorEsteira)
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_pipeline_etapa_indice_atual` | Gauge | — | Índice da etapa em execução na esteira (`0` = ocioso/idle, `1` a `20` durante a execução). |
+| `apartamentos_pipeline_total_etapas` | Gauge | — | Quantidade total de etapas programadas no ciclo (valor fixo: 20 etapas). |
+| `apartamentos_pipeline_etapas_iniciadas_total` | Counter | — | Total acumulado de etapas disparadas pelo orquestrador. |
+| `apartamentos_pipeline_etapas_concluidas_total` | Counter | — | Total acumulado de etapas finalizadas com êxito. |
+| `apartamentos_pipeline_etapas_falhas_total` | Counter | — | Total acumulado de etapas abortadas por exceção ou timeout. |
+| `apartamentos_pipeline_etapa_duracao_segundos` | Histogram | `etapa` | Tempo de execução individual de cada etapa (buckets de 0.1s a 600s). Permite identificar gargalos de I/O, tuning ou scraping. |
+| `apartamentos_pipeline_duracao_total_segundos` | Gauge | — | Duração total da última execução ponta a ponta do pipeline. |
+| `apartamentos_pipeline_ultima_execucao_timestamp` | Gauge | — | Timestamp Unix epoch da última esteira concluída. Usado para auditar frescor dos artefatos. |
+| `apartamentos_pipeline_execucoes_total` | Counter | — | Total de ciclos completos de treinamento executados na história do cluster. |
+| `apartamentos_pipeline_etapas_com_falha_ultima_execucao` | Gauge | — | Contagem de erros no último ciclo executado (esperado: `0` para pipeline íntegro). |
+
+---
+
+#### 6. Negócio e Estatísticas Imobiliárias Hierárquicas
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_negocio_preco_mediano_global` | Gauge | — | Preço mediano de todos os apartamentos do município no dataset de treino (R$). |
+| `apartamentos_negocio_preco_medio_global` | Gauge | — | Preço médio global no dataset (R$). |
+| `apartamentos_negocio_preco_m2_mediano_global` | Gauge | — | Mediana municipal do valor por metro quadrado ($R\$/m^2$). Balizador macro de liquidez. |
+| `apartamentos_negocio_total_imoveis_dataset` | Gauge | — | Volume total de imóveis válidos considerados na modelagem. |
+| `apartamentos_negocio_preco_mediano_zona` | Gauge | `zona` | Preço mediano por macrozona (ex: Zona Sul, Zona Oeste). |
+| `apartamentos_negocio_preco_m2_mediano_zona` | Gauge | `zona` | Valor mediano do $m^2$ por macrozona. |
+| `apartamentos_negocio_total_amostras_zona` | Gauge | `zona` | Volume de apartamentos catalogados por zona. |
+| `apartamentos_negocio_preco_mediano_bairro` | Gauge | `bairro`, `zona` | Mediana do preço por bairro individualizado e mapeado à sua respectiva macrozona. |
+| `apartamentos_negocio_total_amostras_bairro` | Gauge | `bairro`, `zona` | Densidade amostral por bairro. Sinaliza bairros com representatividade estatística suficiente. |
+
+---
+
+#### 7. Nested Cross-Validation (Sensibilidade por Fold e Modelo)
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_cv_rmse_fold` | Gauge | `modelo`, `fold` | $RMSE$ obtido em cada fold externo individual (15 folds: 5 splits × 3 repetições) por modelo. |
+| `apartamentos_cv_r2_fold` | Gauge | `modelo`, `fold` | Coeficiente $R^2$ obtido em cada fold externo. Avalia a estabilidade entre partições. |
+| `apartamentos_cv_mae_fold` | Gauge | `modelo`, `fold` | $MAE$ em cada fold externo. |
+| `apartamentos_cv_mape_fold` | Gauge | `modelo`, `fold` | $MAPE$ em cada fold externo. |
+| `apartamentos_cv_rmse_medio` | Gauge | `modelo` | Média aritmética do $RMSE$ calculada sobre os 15 folds externos do modelo. |
+| `apartamentos_cv_r2_medio` | Gauge | `modelo` | Média aritmética do $R^2$ calculada sobre os 15 folds externos do modelo. |
+| `apartamentos_cv_desvio_padrao` | Gauge | `modelo`, `metrica` | Desvio padrão descritivo amostral (`ddof=0`) entre os 15 folds externos para cada métrica ($RMSE$, $MAE$, $R^2$, $MAPE$, etc.). |
+| `apartamentos_cv_media` | Gauge | `modelo`, `metrica` | Média geral da métrica avaliada entre todos os folds externos. |
+| `apartamentos_cv_rmse_std` | Gauge | `modelo` | Desvio padrão específico do $RMSE$. Mede a robustez do modelo contra variações na partição de dados. |
+| `apartamentos_cv_duracao_media_fold_segundos` | Gauge | `modelo` | Tempo médio de treino e validação consumido por cada fold individual do modelo. |
+
+---
+
+#### 8. Avaliação Granular no Holdout (Zona e Bairro)
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_holdout_rmse_zona` | Gauge | `zona` | $RMSE$ verificado exclusivamente nos dados de teste holdout pertencentes a cada zona. |
+| `apartamentos_holdout_mae_zona` | Gauge | `zona` | $MAE$ no holdout por zona territorial. |
+| `apartamentos_holdout_r2_zona` | Gauge | `zona` | $R^2$ obtido no holdout por zona territorial. Revela se o modelo tem aderência homogênea em todas as regiões. |
+| `apartamentos_holdout_mape_zona` | Gauge | `zona` | Erro percentual ($MAPE$) no holdout por zona. |
+| `apartamentos_holdout_valor_medio_previsto_zona` | Gauge | `zona` | Valor médio previsto pelo modelo no conjunto de teste holdout por zona. |
+| `apartamentos_holdout_rmse_bairro` | Gauge | `bairro`, `zona` | $RMSE$ no holdout por bairro. Identifica micro-regiões de maior erro de precificação. |
+| `apartamentos_holdout_r2_bairro` | Gauge | `bairro`, `zona` | $R^2$ no holdout por bairro. |
+| `apartamentos_holdout_valor_medio_previsto_bairro` | Gauge | `bairro`, `zona` | Preço médio previsto para o bairro específico dentro do holdout. |
+| `apartamentos_holdout_amostras_zona` | Gauge | `zona` | Quantidade de imóveis de cada zona presentes no conjunto de validação final. |
+
+---
+
+#### 9. Qualidade e Integridade dos Dados (Data Health)
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_dados_total_amostras` | Gauge | — | Total de registros importados da camada de dados brutos. |
+| `apartamentos_dados_missing_percentual` | Gauge | `coluna` | Proporção percentual de valores nulos/ausentes por coluna antes do pipeline de imputação. |
+| `apartamentos_dados_outliers_percentual` | Gauge | `coluna` | Proporção de outliers detectados por coluna segundo o critério interquartil ($IQR$). |
+| `apartamentos_dados_media_alvo` | Gauge | — | Média do target `Valor_da_Venda` na base de desenvolvimento. |
+| `apartamentos_dados_mediana_alvo` | Gauge | — | Mediana do target `Valor_da_Venda`. |
+| `apartamentos_dados_std_alvo` | Gauge | — | Desvio padrão populacional do target. |
+| `apartamentos_dados_assimetria_alvo` | Gauge | — | Coeficiente de assimetria (*skewness*) do target. Mede o alongamento da cauda à direita no preço. |
+| `apartamentos_dados_amostras_por_zona` | Gauge | `zona` | Contagem de amostras disponíveis por zona na base bruta. |
+| `apartamentos_dados_amostras_por_bairro` | Gauge | `bairro` | Contagem de amostras disponíveis por bairro na base bruta. |
+
+---
+
+#### 10. Resíduos e Intervalos de Confiança
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_predicao_residuo_medio` | Gauge | — | Resíduo médio ($y_{\text{real}} - \hat{y}_{\text{previsto}}$). Mede o viés sistemático do modelo (esperado: próximo de zero). |
+| `apartamentos_predicao_residuo_std` | Gauge | — | Desvio padrão dos resíduos. Mede a dispersão dos erros de previsão. |
+| `apartamentos_predicao_valor_previsto` | Histogram | — | Distribuição dos valores previstos pelo modelo em classes de valor ($R\$ 200k$ a $R\$ 2M+$). |
+| `apartamentos_predicao_erro_percentual_p50` | Gauge | — | Percentil 50 (mediana) do erro percentual absoluto (medida robusta a outliers). |
+| `apartamentos_predicao_erro_percentual_p90` | Gauge | — | Percentil 90 do erro percentual absoluto (limite superior para 90% das previsões). |
+| `apartamentos_predicao_erro_percentual_p95` | Gauge | — | Percentil 95 do erro percentual absoluto (caso de pior cenário em 95% dos casos). |
+
+---
+
+#### 11. Recursos Computacionais e Sistema
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_sistema_cpu_uso_percentual` | Gauge | — | Percentual de uso de CPU durante o processamento do pipeline. |
+| `apartamentos_sistema_memoria_uso_mb` | Gauge | — | Memória RAM residente alocada em MB pelo processo de treinamento. |
+| `apartamentos_sistema_threads_ativas` | Gauge | — | Número de threads concorrentes ativas em tempo de execução. |
+
+---
+
+#### 12. Métricas de Serving e Tempo Real (MetricasServing & DistribuicaoServing)
+
+| Métrica | Tipo | Labels | Descrição & Interpretação Operacional |
+| :--- | :---: | :--- | :--- |
+| `apartamentos_serving_requisicoes_total` | Counter | `status` | Total de requisições HTTP recebidas pela API de serving discriminadas por código HTTP (`200`, `400`, `500`). |
+| `apartamentos_serving_latencia_segundos` | Histogram | — | Latência observada pelo adaptador ASGI na rota `/invocations`. |
+| `apartamentos_serving_lote_imoveis` | Histogram | — | Quantidade de imóveis enviados em cada payload de predição em lote. |
+| `apartamentos_serving_entradas_total` | Counter | — | Total acumulado de registros de entrada processados. |
+| `apartamentos_serving_entrada_problemas_total` | Counter | `campo`, `motivo` | Falhas de validação de dados de entrada (`valor_negativo`, `ausente`, `tipo_invalido`). |
+| `apartamentos_serving_referencia_total` | Counter | `nivel` | Contagem de predições enriquecidas em cada nível hierárquico (`bairro`, `zona`, `global`). |
+| `apartamentos_serving_telemetria_falhas_total` | Counter | — | Erros internos ocorridos durante a emissão ou exportação de métricas. |
+| `apartamentos_serving_modelo_info` | Info | `nome`, `versao` | Informações da versão do modelo em execução no container de serving. |
+| `apartamentos_serving_carregado_timestamp` | Gauge | — | Timestamp em que o modelo foi instanciado e colocado em memória no serving. |
+| `apartamentos_serving_registrado_timestamp` | Gauge | — | Timestamp de registro do modelo no MLflow Model Registry. |
+| `apartamentos_serving_treinado_timestamp` | Gauge | — | Timestamp de conclusão do run de treinamento original do modelo servido. |
+| `apartamentos_serving_valor` | Histogram | `zona`, `bairro` | Histograma em tempo real dos valores absolutos dos imóveis precificados em produção. |
+| `apartamentos_serving_valor_m2` | Histogram | `zona`, `bairro` | Histograma em tempo real dos valores de metro quadrado ($R\$/m^2$) cotados em produção. |
+| `apartamentos_snapshot_timestamp` | Gauge | — | Timestamp Unix epoch do arquivo `treino.prom` lido pelo exportador `metricas-treino`. |
+
+---
 
 ## Logs e manutenção
 

@@ -4,7 +4,9 @@ A documentação descreve o código atual. Exemplos numéricos não são benchma
 
 ## Uso e operação
 
+- [✨ Documentação Interativa em HTML](index.html).
 - [Visão geral](../README.md).
+- [Guia passo a passo de como executar o projeto](como_executar_o_projeto.md).
 - [Instalação, treinamento, publicação e diagnóstico](../production_artifacts/Deployment.md).
 - [Contrato da API](exemplo_chamada_api_mlflow.md).
 - [Validação cruzada, VotingRegressor e sensibilidade às divisões dos dados](validacao_cruzada_e_tuning.md).
