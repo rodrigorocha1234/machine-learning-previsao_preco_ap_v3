@@ -590,6 +590,18 @@ Usando os casos 1 e 2:
 
 No registro interno, associe esse resumo à data da consulta, à versão efetivamente carregada no serving e ao identificador do imóvel no cadastro comercial. Esses dados de controle não fazem parte dos 40 campos da resposta; o alias `champion`, sozinho, não identifica permanentemente uma versão.
 
+#### Caso 7 — Panorama Territorial: Interpretação de 1 Bairro por Zona
+
+Ribeirão Preto possui dinâmicas imobiliárias muito distintas entre suas 5 macrorregiões. A tabela abaixo resume as métricas retornadas pela API e a interpretação de mercado recomendada para **um bairro representativo de cada zona**, considerando as 5.712 transações históricas:
+
+| Zona | Bairro Representativo | Tipologia Típica | Previsão do Modelo | Previsto / m² | Mediana Histórica do Bairro | Índice m² | Faixa Segura (Piso / Teto) | Diagnóstico & Abordagem Comercial |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Zona Sul** | **Jardim Botânico** | 85 m² • 3Q • 2V | **R$ 631.396,73** | R$ 7.428,20/m² | R$ 626.000,00 (R$ 6.934/m²) | **1,07x** | R$ 563,4 mil – R$ 626,0 mil | **Alto Padrão / Parques & Lazer:** Ticket e m² mais nobres da cidade. O índice de 1,07x é defendido pelo condomínio clube e alta liquidez na categoria luxo. |
+| **Zona Leste** | **Jardim Paulista** | 68 m² • 2Q • 1V | **R$ 312.800,00** | R$ 4.600,00/m² | R$ 300.000,00 (R$ 4.600/m²) | **1,00x** | R$ 270,0 mil – R$ 300,0 mil | **Classe Média Consolidada:** Alinhamento exato com a mediana local (1,00x). Segurança de liquidez imediata para famílias e casais jovens. |
+| **Zona Oeste** | **Sumarezinho** | 65 m² • 2Q • 1V | **R$ 275.000,00** | R$ 4.230,77/m² | R$ 245.000,00 (R$ 4.348/m²) | **0,97x** | R$ 220,5 mil – R$ 245,0 mil | **Polo Universitário USP:** Custo por m² 3% abaixo da mediana local. Apelo maciço para investidores focados em locação para estudantes e residentes do HC. |
+| **Zona Norte** | **Campos Elíseos** | 58 m² • 2Q • 1V | **R$ 238.000,00** | R$ 4.103,45/m² | R$ 260.000,00 (R$ 4.167/m²) | **0,98x** | R$ 234,0 mil – R$ 260,0 mil | **1º Imóvel / Bairro Tradicional:** Ticket altamente acessível e custos condominiais baixos. Ideal para programas de crédito habitacional. |
+| **Centro** | **Centro** | 95 m² • 3Q • 1V | **R$ 365.000,00** | R$ 3.842,11/m² | R$ 380.000,00 (R$ 3.842/m²) | **1,00x** | R$ 342,0 mil – R$ 380,0 mil | **Plantas Amplas & Retrofit:** Menor valor por m² da cidade em área consolidada (R$ 3.842/m²). Excelente para quem prioriza espaço e logística a pé. |
+
 ---
 
 ## 7. Lógica de Fallback Hierárquico
