@@ -5,6 +5,7 @@ A documentação descreve o código atual. Exemplos numéricos não são benchma
 ## Uso e operação
 
 - [✨ Documentação Interativa em HTML](index.html).
+- [Fluxo Detalhado das 20 Etapas do Pipeline](fluxo_das_etapas.md).
 - [Visão geral](../README.md).
 - [Guia passo a passo de como executar o projeto](como_executar_o_projeto.md).
 - [Instalação, treinamento, publicação e diagnóstico](../production_artifacts/Deployment.md).

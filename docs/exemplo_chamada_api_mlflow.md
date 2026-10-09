@@ -394,6 +394,96 @@ Essas faixas são uma convenção de leitura deste guia; não são classificaç�
 | Negativo (`-`) | Preço previsto ABAIXO da média histórica desse nível |
 
 
+### 6.1 Estudo de Caso de Alto Padrão: Jardim Botânico (R$ 801.852,60) — Dicionário de Negócio dos 32 Campos
+
+Abaixo está o estudo de caso real de retorno da API para um apartamento de 85 m² situado no **Jardim Botânico (Zona Sul)**, avaliado pelo modelo em **R$ 801.852,60**. A tabela detalha a tradução de negócio e as diretrizes comerciais para cada um dos **32 elementos do JSON**:
+
+#### Payload Retornado pela API
+```json
+{
+  "predictions": [
+    {
+      "valor_previsto": 801852.6,
+      "valor_m2_previsto": 9433.56,
+      "global_mediana_mercado": 290000,
+      "global_media_mercado": 422828.81,
+      "global_mediana_m2_mercado": 4444.44,
+      "diferenca_perc_global": 176.5,
+      "indice_imovel_global": 2.12,
+      "global_faixa_segura_piso": 721667.34,
+      "global_faixa_segura_teto": 882037.86,
+      "Zona": "Zona Sul",
+      "zona_mediana_mercado": 480000,
+      "zona_media_mercado": 548232.96,
+      "zona_mediana_m2_mercado": 6470.59,
+      "zona_valor_previsto": 801852.6,
+      "valor_m2_previsto_zona": 9433.56,
+      "diferenca_perc_zona": 67.05,
+      "indice_imovel_zona": 1.46,
+      "zona_faixa_segura_piso": 721667.34,
+      "zona_faixa_segura_teto": 882037.86,
+      "Bairro": "Jardim Botânico",
+      "bairro_mediana_mercado": 440000,
+      "bairro_media_mercado": 506000,
+      "bairro_mediana_m2_mercado": 7428,
+      "bairro_valor_previsto": 801852.6,
+      "valor_m2_previsto_bairro": 9433.56,
+      "diferenca_perc_bairro": 82.24,
+      "indice_imovel_bairro": 1.27,
+      "bairro_desconto_5": 761759.97,
+      "bairro_desconto_10": 721667.34,
+      "bairro_desconto_15": 681574.71,
+      "bairro_faixa_segura_piso": 721667.34,
+      "bairro_faixa_segura_teto": 882037.86
+    }
+  ]
+}
+```
+
+#### Interpretação dos 32 Elementos para Corretores e Gestão de Vendas
+
+| # | Elemento no JSON | Valor Retornado | Conceito Imobiliário | Interpretação Prática para a Equipe de Negócio & Roteiro Comercial |
+| :-: | :--- | :---: | :--- | :--- |
+| **I** | **PRECIFICAÇÃO BASE** | | | |
+| 1 | `valor_previsto` | R$ 801.852,60 | Preço Justo Algorítmico | **Âncora de Avaliação:** Valor central de mercado apontado pelo modelo comitê de Machine Learning. Use como o preço recomendado de anúncio ou proposta inicial firme. |
+| 2 | `valor_m2_previsto` | R$ 9.433,56 / m² | Valor Unitário de Área | **Equalizador de Comparação:** Valor do metro quadrado (`801.852,60 ÷ 85 m²`). Permite ao corretor comparar esta unidade com apartamentos de metragens distintas no mesmo prédio ou bairro. |
+| 3 | `Zona` | `"Zona Sul"` | Macrorregião | Região nobre de maior liquidez e valorização em Ribeirão Preto, com perfil de comprador com renda consolidada. |
+| 4 | `Bairro` | `"Jardim Botânico"` | Microlocalização | Bairro nobre e desejado, com infraestrutura completa de parques, gastronomia e comércio sofisticado, justificando valor superior à média da cidade. |
+| **II** | **CONTEXTO GLOBAL (MUNICÍPIO)** | | | |
+| 5 | `global_mediana_mercado` | R$ 290.000,00 | Mediana Municipal | Metade dos apartamentos transacionados em Ribeirão Preto custa até R$ 290 mil. Mostra o ticket da habitação padrão/popular na cidade. |
+| 6 | `global_media_mercado` | R$ 422.828,81 | Média Municipal | Ticket médio da cidade (puxado para cima pelas coberturas e empreendimentos de luxo). |
+| 7 | `global_mediana_m2_mercado` | R$ 4.444,44 / m² | Mediana do m² Urbano | Custo de referência do metro quadrado construído no município de Ribeirão Preto. |
+| 8 | `diferenca_perc_global` | +176,50% | Desvio sobre a Média Urbana | **Posicionamento de Alto Padrão:** O imóvel custa quase o triplo (+176,5%) da média da cidade. Argumento para qualificar o comprador: trata-se de um imóvel no quartil superior da pirâmide de renda. |
+| 9 | `indice_imovel_global` | 2,12x | Múltiplo do m² Urbano | O m² deste imóvel (R$ 9.433/m²) vale **2,12 vezes** o m² mediano da cidade (R$ 4.444/m²), confirmando o alto prestígio da localização. |
+| 10 | `global_faixa_segura_piso` | R$ 721.667,34 | Piso Global Seguro | Margem operacional de segurança (−10% do valor previsto) para fechamentos rápidos sem risco de desvalorização patrimonial. |
+| 11 | `global_faixa_segura_teto` | R$ 882.037,86 | Teto Global Seguro | Preço máximo de anúncio (+10%) para imóveis com diferenciais excepcionais (vista definitiva, andar alto, marcenaria de grife). |
+| **III** | **CONTEXTO REGIONAL (ZONA SUL)** | | | |
+| 12 | `zona_mediana_mercado` | R$ 480.000,00 | Mediana da Zona Sul | Ponto de corte dos 50% da Zona Sul. Revela que a Zona Sul opera em patamar 65% mais valorizado que a cidade como um todo. |
+| 13 | `zona_media_mercado` | R$ 548.232,96 | Média da Zona Sul | Preço médio geral praticado na Zona Sul. |
+| 14 | `zona_mediana_m2_mercado` | R$ 6.470,59 / m² | Mediana do m² na Zona | Balizador de custo por m² típico da Zona Sul. |
+| 15 | `zona_valor_previsto` | R$ 801.852,60 | Média do Lote na Zona | Média dos valores previstos para os imóveis da Zona Sul presentes na requisição (idêntica ao valor unitário em chamadas com 1 imóvel). |
+| 16 | `valor_m2_previsto_zona` | R$ 9.433,56 / m² | Média do m² no Lote | Preço por metro quadrado médio previsto para os apartamentos da Zona Sul enviados no lote. |
+| 17 | `diferenca_perc_zona` | +67,05% | Desvio sobre a Zona Sul | O imóvel está **67% acima da média da Zona Sul**. Mostra que não é um apartamento padrão da região, mas sim uma unidade de metragem superior com acabamento nobre. |
+| 18 | `indice_imovel_zona` | 1,46x | Múltiplo do m² da Zona | O metro quadrado previsto está **46% acima da mediana da Zona Sul** (R$ 9.433 vs R$ 6.470), destacando a valorização microlocal do Jardim Botânico perante outros bairros da Zona Sul. |
+| 19 | `zona_faixa_segura_piso` | R$ 721.667,34 | Piso Regional Seguro | Piso balizador regional para não aceitar propostas predatórias. |
+| 20 | `zona_faixa_segura_teto` | R$ 882.037,86 | Teto Regional Seguro | Teto sugerido para criação de margem de barganha na Zona Sul. |
+| **IV** | **CONTEXTO MICROLOCAL (JARDIM BOTÂNICO)** | | | |
+| 21 | `bairro_mediana_mercado` | R$ 440.000,00 | Mediana do Bairro | Metade das unidades no Jardim Botânico custa até R$ 440 mil (bairro que concentra tanto estúdios/compactos quanto apartamentos de alto padrão). |
+| 22 | `bairro_media_mercado` | R$ 506.000,00 | Média do Bairro | Preço médio de transação de imóveis residenciais no Jardim Botânico. |
+| 23 | `bairro_mediana_m2_mercado` | R$ 7.428,00 / m² | Mediana do m² no Bairro | **Métrica-Chave de Negociação:** O m² mediano histórico do Jardim Botânico é de R$ 7.428,00/m². |
+| 24 | `bairro_valor_previsto` | R$ 801.852,60 | Média do Lote no Bairro | Média dos imóveis do Jardim Botânico enviados no lote. |
+| 25 | `valor_m2_previsto_bairro` | R$ 9.433,56 / m² | Média do m² no Bairro | Preço por m² médio do lote enviado no Jardim Botânico. |
+| 26 | `diferenca_perc_bairro` | +82,24% | Desvio sobre o Bairro | O imóvel custa **82% acima da média do bairro**, justificado pela planta confortável (85 m²), 3 dormitórios e 2 vagas de garagem. |
+| 27 | `indice_imovel_bairro` | 1,27x | Múltiplo do m² no Bairro | **Defesa do Preço:** O m² desta unidade (R$ 9.433/m²) é **27% superior à mediana do bairro** (R$ 7.428/m²). Justificado por diferenciais construtivos, lazer completo e vista privilegiada. |
+| **V** | **POLÍTICA COMERCIAL E CORREDORES DE FECHAMENTO** | | | |
+| 28 | `bairro_desconto_5` | R$ 761.759,97 | Desconto Cortesia (5%) | **Fechamento Rápido:** Margem de negociação para propostas à vista ou comprador qualificado com entrada elevada. Preserva 95% do valor estimado. |
+| 29 | `bairro_desconto_10` | R$ 721.667,34 | Desconto Comercial (10%) | **Limite do Corretor:** Margem máxima que o corretor pode conceder em mesa para fechar negócio sem necessidade de aprovação da diretoria. |
+| 30 | `bairro_desconto_15` | R$ 681.574,71 | Desconto Agressivo (15%) | **Zona de Liquidez Rápida:** Aplicável apenas em desinvestimento acelerado ou necessidade urgente de caixa do vendedor. |
+| 31 | `bairro_faixa_segura_piso` | R$ 721.667,34 | Piso Seguro de Fechamento | **Linha Vermelha de Proteção:** Propostas abaixo de R$ 721,6 mil devem ser prontamente recusadas ou submetidas à diretoria executiva. |
+| 32 | `bairro_faixa_segura_teto` | R$ 882.037,86 | Teto de Anúncio | **Preço de Vitrine:** Valor recomendado para veiculação em portais (Zap Imóveis, VivaReal) com gordura para negociação (+10%). |
+
+---
+
 ### Exemplos para a equipe de negócio
 
 Os cenários a seguir usam **valores fictícios para explicar os cálculos**. São independentes da resposta ilustrativa da seção 4. As referências históricas vêm da base de desenvolvimento do modelo carregado, não de uma consulta ao mercado em tempo real.

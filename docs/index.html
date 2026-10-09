@@ -799,10 +799,435 @@
       font-size: 13px;
     }
 
-    /* Responsividade */
+    /* ==========================================================================
+       SISTEMA COMPLETO DE RESPONSIVIDADE & MOBILE-FIRST ENHANCEMENTS
+       ========================================================================== */
+    
+    /* Barra Superior Mobile (<= 1024px) */
+    .mobile-topbar {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 150;
+      padding: 0 16px;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .mobile-topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .mobile-topbar-brand .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+    }
+
+    .mobile-topbar-brand .brand-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .mobile-topbar-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .mobile-topbar-subtitle {
+      font-size: 10px;
+      color: var(--secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hamburger-btn {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #fff;
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .hamburger-btn:hover, .hamburger-btn:active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: var(--primary);
+    }
+
+    .hamburger-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: #fff;
+    }
+
+    /* Overlay escuro para mobile drawer */
+    #sidebarOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 190;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    body.sidebar-open #sidebarOverlay {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    body.sidebar-open {
+      overflow: hidden;
+    }
+
+    .close-sidebar-btn {
+      display: none;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .close-sidebar-btn:hover, .close-sidebar-btn:active {
+      color: #fff;
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--accent-danger);
+    }
+
+    .close-sidebar-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* Botão Flutuante Voltar ao Topo */
+    .back-to-top {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(12px);
+      transition: all 0.25s ease;
+      z-index: 90;
+      touch-action: manipulation;
+    }
+
+    .back-to-top.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .back-to-top:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 22px var(--primary-glow);
+    }
+
+    .back-to-top svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* Dica sutil de rolagem horizontal em tabelas e SVGs no mobile */
+    .scroll-hint {
+      display: none;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      align-items: center;
+      gap: 6px;
+      margin: 4px 0 10px;
+      font-style: italic;
+    }
+
+    .scroll-hint svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       MEDIA QUERIES ESPECÍFICAS POR BREAKPOINT
+       ========================================================================== */
+
+    /* Breakpoint 1: Telas Médias / Tablets (<= 1024px) */
     @media (max-width: 1024px) {
-      aside.sidebar { display: none; }
-      main.content-wrapper { margin-left: 0; padding: 24px; }
+      .mobile-topbar {
+        display: flex;
+      }
+
+      aside.sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 200;
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.7);
+        width: min(320px, 86vw);
+        padding-top: 20px;
+      }
+
+      body.sidebar-open aside.sidebar {
+        transform: translateX(0);
+      }
+
+      .close-sidebar-btn {
+        display: flex;
+      }
+
+      main.content-wrapper {
+        margin-left: 0;
+        padding: 90px 30px 80px;
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .sim-result-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Breakpoint 2: Smartphones Grandes e Tablets Pequenos (<= 768px) */
+    @media (max-width: 768px) {
+      body {
+        font-size: 14.5px;
+      }
+
+      main.content-wrapper {
+        padding: 82px 18px 60px;
+      }
+
+      .hero {
+        margin-bottom: 35px;
+        padding-bottom: 25px;
+      }
+
+      .hero h1 {
+        font-size: clamp(24px, 5.5vw, 32px);
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+      }
+
+      .hero-lead {
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .section-header {
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .section-header h2 {
+        font-size: clamp(19px, 4.5vw, 23px);
+        letter-spacing: -0.3px;
+      }
+
+      .section-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+
+      .section-icon svg {
+        width: 17px;
+        height: 17px;
+      }
+
+      .glass-card {
+        padding: 18px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .grid-3 {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .grid-4 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .stat-card {
+        padding: 16px 14px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+
+      .simulator-box {
+        padding: 18px 14px;
+        border-radius: 12px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .sim-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 13px 20px;
+      }
+
+      .scroll-hint {
+        display: flex;
+      }
+
+      .architecture-diagram {
+        padding: 18px 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 10px;
+      }
+
+      .architecture-diagram svg {
+        min-width: 780px;
+        height: auto;
+      }
+
+      .stage-header {
+        padding: 12px 14px;
+      }
+
+      .stage-left {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .stage-name {
+        font-size: 13px;
+      }
+
+      .stage-number {
+        font-size: 12px;
+        padding: 2px 6px;
+      }
+
+      .stage-content {
+        padding: 0 14px 14px;
+        font-size: 13px;
+      }
+
+      th, td {
+        padding: 10px 12px;
+        font-size: 12.5px;
+      }
+
+      .code-block pre {
+        padding: 12px;
+        font-size: 12px;
+      }
+
+      footer.doc-footer {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 24px 0;
+        margin-top: 40px;
+      }
+    }
+
+    /* Breakpoint 3: Smartphones Compactos (<= 480px) */
+    @media (max-width: 480px) {
+      main.content-wrapper {
+        padding: 76px 12px 50px;
+      }
+
+      .hero-tags {
+        gap: 6px;
+      }
+
+      .tag {
+        font-size: 10.5px;
+        padding: 3px 8px;
+      }
+
+      .glass-card {
+        padding: 14px 12px;
+      }
+
+      .table-container {
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+
+      th, td {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      .stage-item {
+        border-radius: 8px;
+      }
+
+      .stage-header {
+        padding: 10px 12px;
+      }
+
+      .code-header {
+        padding: 7px 12px;
+        font-size: 11px;
+      }
     }
   </style>
 </head>
@@ -810,16 +1235,38 @@
 
   <div class="ambient-glow"></div>
 
-  <!-- Barra Lateral de Navegação -->
-  <aside class="sidebar">
+  <!-- Overlay para drawer lateral no mobile -->
+  <div id="sidebarOverlay" onclick="fecharSidebar()" aria-hidden="true"></div>
+
+  <!-- Barra Superior Mobile (visível apenas em telas <= 1024px) -->
+  <header class="mobile-topbar" role="banner">
+    <a href="#visao-geral" class="mobile-topbar-brand" aria-label="Ir para a página inicial">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div class="mobile-topbar-title">Precifica.AI</div>
+        <div class="mobile-topbar-subtitle">P.R.I.M.E. Valuation</div>
+      </div>
+    </a>
+    <button id="mobileMenuBtn" class="hamburger-btn" onclick="abrirSidebar()" aria-label="Abrir menu de navegação" title="Abrir menu">
+      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
+  </header>
+
+  <!-- Barra Lateral de Navegação (Desktop fixa / Mobile drawer deslizante) -->
+  <aside class="sidebar" id="sidebarNav" role="navigation" aria-label="Navegação Principal">
     <div class="brand">
       <div class="brand-icon">
         <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </div>
       <div class="brand-text">
-        <h1>ML Imobiliário</h1>
-        <span>Ribeirão Preto v3</span>
+        <h1>Precifica.AI</h1>
+        <span>P.R.I.M.E. Valuation • v3</span>
       </div>
+      <button id="closeSidebarBtn" class="close-sidebar-btn" onclick="fecharSidebar()" aria-label="Fechar menu lateral" title="Fechar menu">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
     </div>
 
     <div class="search-box">
@@ -833,43 +1280,51 @@
         <svg viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
         1. Visão Geral
       </a>
+      <a href="#requisitos-regras" class="nav-link">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        2. Requisitos & Regras
+      </a>
       <a href="#arquitetura" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-        2. Arquitetura
+        3. Arquitetura
       </a>
       <a href="#pipeline-20" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-        3. O Pipeline (20 Etapas)
+        4. O Pipeline (20 Etapas)
+      </a>
+      <a href="fluxo_das_etapas.md" target="_blank" class="nav-link" style="color: #38bdf8; font-size: 12.5px;">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        Doc: Fluxo 20 Etapas (.md) ↗
       </a>
 
       <div class="nav-label">Engenharia de ML</div>
       <a href="#nested-cv" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
-        4. Nested CV & Tuning
+        5. Nested CV & Tuning
       </a>
       <a href="#contrato-api" class="nav-link">
-        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
-        5. Contrato da API (32 Campos)
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+        6. Contrato da API (32 Campos)
       </a>
       <a href="#simulador-api" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg>
-        6. Simulador Interativo
+        7. Simulador Interativo
       </a>
 
       <div class="nav-label">Negócio & Decisão</div>
       <a href="#resultados-negocio" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-        7. Resultados p/ Negócio
+        8. Resultados p/ Negócio
       </a>
 
       <div class="nav-label">Operação & DevOps</div>
       <a href="#como-executar" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        8. Como Executar
+        9. Como Executar
       </a>
       <a href="#observabilidade" class="nav-link">
         <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-        9. Observabilidade
+        10. Observabilidade
       </a>
     </nav>
 
@@ -888,13 +1343,13 @@
     <!-- Hero Section -->
     <header class="hero">
       <div class="hero-tags">
-        <span class="tag tag-primary">Machine Learning v3</span>
-        <span class="tag tag-accent">VotingRegressor Campeão</span>
+        <span class="tag tag-primary">Precifica.AI • PropTech</span>
+        <span class="tag tag-accent">P.R.I.M.E. Valuation Engine</span>
         <span class="tag tag-cyan">Ribeirão Preto / SP</span>
       </div>
-      <h1>Previsão Inteligente de Preços de Apartamentos</h1>
+      <h1>Precifica.AI — Inteligência Preditiva de Avaliação Imobiliária</h1>
       <p class="hero-lead">
-        Sistema ponta a ponta de precificação imobiliária automatizada com validação cruzada aninhada (Nested CV), 
+        Plataforma corporativa de ponta a ponta para precificação imobiliária automatizada com validação cruzada aninhada (Nested CV), 
         governança em holdout estrito, regras geográficas em 3 níveis (Global, Zona e Bairro) e monitoramento contínuo via Grafana e Prometheus.
       </p>
     </header>
@@ -943,15 +1398,368 @@
           <li><strong>Inteligência de Negociação:</strong> Calcula faixas de segurança (piso e teto) e simulações imediatas de desconto comercial (5%, 10% e 15%).</li>
         </ul>
       </div>
+
+      <!-- PAINEL DE IDENTIDADE E NAMING DO PROJETO -->
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 14px; padding: 22px; margin-top: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="margin: 0; font-size: 17px; color: #a5b4fc; display: flex; align-items: center; gap: 8px;">
+            <span>🏷️ Identidade de Produto & Opções de Naming</span>
+          </h3>
+          <span class="tag tag-primary">Brand & Posicionamento Estratégico</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 16px;">
+          Para comercialização, captação institucional ou apresentação a investidores, a solução pode adotar as seguintes identidades oficiais:
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+          <div style="background: #090e1a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 700; color: #38bdf8; font-size: 15px; margin-bottom: 4px;">1. Precifica.AI ⭐ (Recomendado)</div>
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">Linha PropTech / SaaS Comercial</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              Nome comercial direto, moderno e escalável. Posiciona a plataforma imediatamente como a ferramenta definitiva de precificação para corretores e imobiliárias.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 700; color: #34d399; font-size: 15px; margin-bottom: 4px;">2. P.R.I.M.E. Engine</div>
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">Predictive Real Estate Intelligence & Market Engine</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              Acrônimo corporativo voltado para o mercado de alto padrão (Zona Sul/Jardim Botânico) e relatórios executivos para diretorias de incorporadoras.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 700; color: #fbbf24; font-size: 15px; margin-bottom: 4px;">3. ValoraProp</div>
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">Linha Patrimonial & Liquidez</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              Enfatiza o valor patrimonial seguro, a defesa de margens comerciais e a eliminação de prejuízos causados por avaliações empíricas.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 700; color: #c084fc; font-size: 15px; margin-bottom: 4px;">4. Stratum Valuation</div>
+            <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">Linha Engenharia MLOps Enterprise</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              Inspirado na arquitetura em camadas estratificadas (Global, Regional e Microlocal) com governança estrita de dados e testes não-paramétricos.
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- 2. ARQUITETURA -->
+    <!-- 2. REQUISITOS & REGRAS DE NEGÓCIO -->
+    <section id="requisitos-regras" class="doc-section">
+      <div class="section-header">
+        <div class="section-icon" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3);">
+          <svg viewBox="0 0 24 24" fill="#10b981"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <h2>2. Requisitos do Sistema & Regras de Negócio</h2>
+      </div>
+
+      <p style="color: var(--text-muted); margin-bottom: 24px;">
+        Esta seção formaliza a especificação completa de engenharia de software e domínio imobiliário da plataforma <strong>Precifica.AI</strong>, estruturada em três pilares: <strong>Requisitos Funcionais (RF)</strong>, <strong>Requisitos Não Funcionais (RNF)</strong> e <strong>Regras de Negócio (RN)</strong>.
+      </p>
+
+      <!-- SUBSEÇÃO A: REQUISITOS FUNCIONAIS -->
+      <div class="glass-card" style="margin-bottom: 26px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="color: #60a5fa; font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>⚙️ Requisitos Funcionais (RF)</span>
+          </h3>
+          <span class="tag tag-primary">12 Requisitos Especificados</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 16px;">
+          Funcionalidades e comportamentos executados pelo pipeline de Machine Learning, motor de regras e API de inferência:
+        </p>
+
+        <div class="scroll-hint">
+          <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+          <span>Dica: arraste horizontalmente para conferir todas as colunas de requisitos</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 85px;">ID</th>
+                <th style="width: 220px;">Requisito Funcional</th>
+                <th>Descrição Técnica & Comportamento Esperado</th>
+                <th style="width: 170px;">Módulo Responsável</th>
+                <th style="width: 115px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-01</strong></td>
+                <td><strong>Ingestão de Dados & Anti-Leakage</strong></td>
+                <td>Carregar dataset de 5.712 apartamentos (<code>dados/bairro_final_v3_engineered.xlsx</code>) e purgar imediatamente colunas com risco de vazamento de target (<code>Código</code>, <code>Apartamento</code>, <code>valor_m2</code>, médias locais de m²).</td>
+                <td><code>CarregadorExcel</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-02</strong></td>
+                <td><strong>Validação de Contrato & Quality Gate</strong></td>
+                <td>Validar a presença da coluna alvo (<code>Valor</code>), integridade de tipos e limites físicos estritos (metragem &gt; 0, quartos &ge; 0, banheiros &ge; 0, vagas &ge; 0), emitindo métricas de qualidade ao Prometheus.</td>
+                <td><code>ValidadorContrato</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-03</strong></td>
+                <td><strong>Persistência em Staging SQLite</strong></td>
+                <td>Persistir snapshot integral e imutável dos dados brutos validados na tabela SQLite <code>apartamentos_staging</code> para rastreabilidade, auditoria e reprodutibilidade histórica.</td>
+                <td><code>RepositorioStaging</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-04</strong></td>
+                <td><strong>Isolamento em Cofre de Holdout</strong></td>
+                <td>Particionar a base em 80% treino e 20% teste cego com semente determinística fixa (42). Bloquear a partição de 20% no <code>CofreHoldout</code>, proibindo leitura durante EDA, CV e tuning.</td>
+                <td><code>CofreHoldout</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-05</strong></td>
+                <td><strong>Análise Exploratória & Detecção de Drift</strong></td>
+                <td>Calcular estatísticas descritivas sobre os 80% de treino e quantificar estabilidade distributiva via teste Kolmogorov-Smirnov (KS), PSI e distância de Wasserstein para variáveis numéricas contínuas.</td>
+                <td><code>DetectorDrift</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-06</strong></td>
+                <td><strong>Nested Cross-Validation (15×5 Folds)</strong></td>
+                <td>Avaliar modelos em 15 folds externos (<code>RepeatedKFold</code> 5 splits × 3 repetições) e ajustar hiperparâmetros em 5 folds internos (<code>KFold</code>), mantendo imputação, codificação e scaling estritamente dentro de cada fold.</td>
+                <td><code>AvaliadorAninhado</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-07</strong></td>
+                <td><strong>Fábrica de Modelos & Tuning Adaptativo</strong></td>
+                <td>Suportar até 10 algoritmos de regressão e aplicar <code>GridSearchCV</code> para modelos lineares/rápidos (Ridge, ElasticNet) e <code>RandomizedSearchCV</code> para ensembles complexos (CatBoost, XGBoost, Random Forest).</td>
+                <td><code>FabricaTuning</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-08</strong></td>
+                <td><strong>Auditoria Estatística Não-Paramétrica</strong></td>
+                <td>Extrair resíduos pareados dos folds externos e aplicar os testes de normalidade (Shapiro-Wilk), significância de rankings (Teste de Friedman) e pós-testes de Nemenyi e Tukey para comprovação matemática.</td>
+                <td><code>TesteFriedman</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-09</strong></td>
+                <td><strong>Seleção do Campeão & Comitê VotingRegressor</strong></td>
+                <td>Eleger o modelo individual campeão ou construir um comitê <code>VotingRegressor</code> ponderado com os Top K modelos de ponta que sejam estatisticamente indistinguíveis pelo teste de Friedman (p-valor &lt; 0.05).</td>
+                <td><code>SeletorCampeao</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-10</strong></td>
+                <td><strong>Motor Imobiliário & Enriquecimento Multinível</strong></td>
+                <td>Calcular referências de mercado históricas em 3 níveis (Global, Zona, Bairro) e enriquecer as previsões com corredores de negociação, índices comparativos de m² e descontos de 5%, 10% e 15%.</td>
+                <td><code>MotorImobiliario</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-11</strong></td>
+                <td><strong>Empacotamento Unificado PyFunc no MLflow</strong></td>
+                <td>Empacotar o pipeline Scikit-Learn ajustado e o <code>MotorImobiliario</code> em um wrapper único <code>mlflow.pyfunc</code>, registrando o modelo no MLflow Registry com tag <code>@champion</code> e assinatura de 32/40 campos.</td>
+                <td><code>ObservadorMlflow</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">RF-12</strong></td>
+                <td><strong>Serving REST de Inferência em Tempo Real</strong></td>
+                <td>Disponibilizar endpoint HTTP na porta 8080 (<code>/invocations</code>) compatível com JSON nos formatos <code>dataframe_records</code> e <code>dataframe_split</code>, retornando resposta enriquecida e expondo <code>/metrics</code> na porta 8000.</td>
+                <td><code>servidor_inferencia</code></td>
+                <td><span class="tag tag-accent">Implementado</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SUBSEÇÃO B: REQUISITOS NÃO FUNCIONAIS -->
+      <div class="glass-card" style="margin-bottom: 26px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="color: #34d399; font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>🛡️ Requisitos Não Funcionais (RNF)</span>
+          </h3>
+          <span class="tag tag-accent">8 Requisitos de Arquitetura & Qualidade</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 16px;">
+          Critérios de qualidade, segurança, governança, desempenho e padrões arquiteturais que regem o sistema:
+        </p>
+
+        <div class="grid-2">
+          <div style="background: #090e1a; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="tag tag-cyan">RNF-01: Performance & Latência</span>
+              <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">SLA &lt; 150ms</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              A API de inferência deve processar requisições unitárias em menos de <strong>80ms</strong> em média, com percentil <strong>p95 &lt; 150ms</strong> e <strong>p99 &lt; 300ms</strong>, viabilizando uso interativo em tempo real por portais e corretores.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="tag tag-accent">RNF-02: Determinismo & Reprodutibilidade</span>
+              <span style="font-size: 11px; color: #34d399; font-weight: 700;">Zero Aleatoriedade</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              Todas as divisões de dados, validação aninhada e inicialização de modelos utilizam <strong>sementes pseudoaleatórias fixas configuradas via YAML</strong> (semente 42), garantindo reprodução idêntica de métricas entre execuções.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="tag tag-warm">RNF-03: Governança Anti-Leakage</span>
+              <span style="font-size: 11px; color: #facc15; font-weight: 700;">Lacre Estrito</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              É proibido qualquer contato do conjunto de teste ou folds de validação com os transformadores de features (<code>OneHotEncoder</code>, <code>RobustScaler</code>, <code>SimpleImputer</code>), eliminando contaminação estatística (*data leakage*).
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="tag tag-primary">RNF-04: Imutabilidade Pré-Teste</span>
+              <span style="font-size: 11px; color: #a5b4fc; font-weight: 700;">Trava de Segurança</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              O cofre de holdout só pode ser destravado com chave mestra após o modelo final e o motor imobiliário serem formalmente congelados (<code>estado_congelado = True</code>), impossibilitando retreinos ou sobreajustes induzidos após o teste.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="tag tag-cyan">RNF-05: Observabilidade OpenMetrics</span>
+              <span style="font-size: 11px; color: #67e8f9; font-weight: 700;">56 Métricas Nativas</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              Exposição de métricas no padrão Prometheus com persistência atômica via <code>PersistenciaMetricas</code>, permitindo que os dashboards Grafana continuem ativos mesmo após o término do pipeline de treino.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase;">RNF-06: Resiliência em Contêineres</span>
+              <span style="font-size: 11px; color: #f87171; font-weight: 700;">Docker Compose</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              Arquitetura desacoplada em microsserviços via Docker Compose: isolamento de banco de dados (PostgreSQL), armazenamento de artefatos S3 (RustFS), MLflow Tracking, Prometheus, Grafana e Serving REST.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase;">RNF-07: Usabilidade & Responsividade</span>
+              <span style="font-size: 11px; color: #c084fc; font-weight: 700;">Mobile-First</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              A documentação oficial e o simulador interativo operam com fluidez em smartphones (drawer lateral com overlay), tablets e monitores widescreen, sem quebras de layout ou transbordamento horizontal.
+            </p>
+          </div>
+
+          <div style="background: #090e1a; border: 1px solid rgba(244, 114, 182, 0.25); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="background: rgba(244, 114, 182, 0.15); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase;">RNF-08: Tipagem Estrita & Manutenibilidade</span>
+              <span style="font-size: 11px; color: #f472b6; font-weight: 700;">Python 3.12</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.55;">
+              Código desenvolvido com tipagem estática rigorosa (dataclasses congeladas, tipos genéricos, tuplas imutáveis e verificação MyPy), assegurando integridade e documentação viva no próprio código.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBSEÇÃO C: REGRAS DE NEGÓCIO -->
+      <div class="glass-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <h3 style="color: #fbbf24; font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>💼 Regras de Negócio Imobiliárias (RN)</span>
+          </h3>
+          <span class="tag tag-warm">8 Regras de Precificação & Negociação</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 16px;">
+          Lógica comercial aplicada pelo <code>MotorImobiliario</code> para transformar predições matemáticas em decisões estratégicas de venda:
+        </p>
+
+        <div class="scroll-hint">
+          <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+          <span>Dica: arraste horizontalmente para conferir todas as colunas de regras de negócio</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 80px;">Regra</th>
+                <th style="width: 210px;">Conceito de Negócio</th>
+                <th>Fórmula / Definição Operacional</th>
+                <th>Impacto & Aplicação na Mesa de Vendas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-01</strong></td>
+                <td><strong>Preço Justo Algorítmico</strong></td>
+                <td><code>valor_previsto</code> (estimativa do comitê de ML)</td>
+                <td><strong>Âncora de Avaliação:</strong> Ponto central de equilíbrio para captação e precificação inicial do apartamento.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-02</strong></td>
+                <td><strong>Equalizador Unitário de Área</strong></td>
+                <td><code>valor_m2_previsto = valor_previsto ÷ max(Metragem, 1.0)</code></td>
+                <td><strong>Comparador Universal:</strong> Permite equalizar unidades de metragens distintas no mesmo prédio ou bairro.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-03</strong></td>
+                <td><strong>Hierarquia em 3 Níveis</strong></td>
+                <td>Comparações simultâneas em: Global (Município), Zona e Bairro</td>
+                <td><strong>Contextualização Completa:</strong> Evita precificar um imóvel de alto padrão com base na média genérica da cidade.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-04</strong></td>
+                <td><strong>Suficiência & Fallback Geográfico</strong></td>
+                <td>Bairros &lt; 20 amostras ou Zonas &lt; 30 amostras herdam a referência superior</td>
+                <td><strong>Proteção Estatística:</strong> Impede que bairros com poucas transações gerem referências distorcidas ou voláteis.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-05</strong></td>
+                <td><strong>Corredor de Segurança (Piso & Teto)</strong></td>
+                <td><code>faixa_segura_piso = -10%</code> | <code>faixa_segura_teto = +10%</code></td>
+                <td><strong>Defesa Patrimonial:</strong> O piso é a "linha vermelha" (nunca vender abaixo sem aval); o teto é a margem de vitrine nos portais.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-06</strong></td>
+                <td><strong>Política Escalonada de Desconto</strong></td>
+                <td>5% (cortesia), 10% (limite do corretor), 15% (deságio urgente)</td>
+                <td><strong>Agilidade Comercial:</strong> Estabelece a alçada de flexibilização do corretor sem necessidade de consultar a gerência.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-07</strong></td>
+                <td><strong>Índice do Imóvel</strong></td>
+                <td><code>indice_imovel_* = valor_m2_previsto ÷ mediana_m2_mercado</code></td>
+                <td><strong>Diferencial Competitivo:</strong> &gt; 1.15x indica padrão construtivo superior/vista; &lt; 0.85x indica oportunidade ou reforma.</td>
+              </tr>
+              <tr>
+                <td><strong style="color: #fbbf24;">RN-08</strong></td>
+                <td><strong>Desvio Percentual de Mercado</strong></td>
+                <td><code>diferenca_perc_* = (valor_previsto − media_mercado) ÷ media × 100</code></td>
+                <td><strong>Qualificação do Comprador:</strong> Mostra se a unidade pertence ao padrão médio local ou se está no topo da pirâmide de renda.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ARQUITETURA -->
     <section id="arquitetura" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
         </div>
-        <h2>2. Arquitetura da Solução</h2>
+        <h2>3. Arquitetura da Solução</h2>
       </div>
 
       <div class="glass-card">
@@ -960,9 +1768,13 @@
           A arquitetura desacopla a orquestração de treino, a infraestrutura de MLOps (PostgreSQL + S3) e o servidor de inferência com monitoramento de telemetria.
         </p>
 
+        <div class="scroll-hint">
+          <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+          <span>Dica: arraste horizontalmente para explorar o diagrama completo</span>
+        </div>
         <!-- Diagrama SVG Limpo -->
         <div class="architecture-diagram">
-          <svg width="100%" height="220" viewBox="0 0 900 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg style="min-width: 820px; width: 100%; height: auto;" viewBox="0 0 900 220" fill="none" xmlns="http://www.w3.org/2000/svg">
             <!-- Camada 1: Entrada -->
             <rect x="20" y="30" width="140" height="70" rx="8" fill="#111827" stroke="#38bdf8" stroke-width="1.5"/>
             <text x="90" y="60" fill="#fff" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" text-anchor="middle">Dados Brutos</text>
@@ -1006,162 +1818,501 @@
       </div>
     </section>
 
-    <!-- 3. O PIPELINE DE 20 ETAPAS -->
+    <!-- 4. O PIPELINE DE 20 ETAPAS -->
     <section id="pipeline-20" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
         </div>
-        <h2>3. O Pipeline de 20 Etapas Determinísticas</h2>
+        <h2>4. O Pipeline de 20 Etapas Determinísticas</h2>
       </div>
 
       <p style="color: var(--text-muted); margin-bottom: 20px;">
-        Clique sobre cada etapa para visualizar suas responsabilidades técnicas, validações e artefatos gerados:
+        O ciclo de treinamento, homologação estatística e publicação é orquestrado de forma 100% determinística através de <strong>20 etapas sequenciais</strong> implementadas via contrato <code>ContratoEtapa</code> e geridas pelo <code>ExecutorEsteira</code>. Consulte também o guia técnico completo em <a href="fluxo_das_etapas.md" style="color: var(--accent); font-weight: 600; text-decoration: underline;">docs/fluxo_das_etapas.md</a>.
       </p>
 
+      <!-- VISÃO MACRO: OS 6 MACROESTÁGIOS -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 24px;">
+        <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #60a5fa; font-size: 13px;">FASE I</span>
+            <span class="stage-category cat-dados">Etapas 01 a 05</span>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Ingestão, Governança & Staging</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Leitura de YAMLs, validação de contrato com Quality Gate e snapshot imutável em SQLite.</p>
+        </div>
+
+        <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #facc15; font-size: 13px;">FASE II</span>
+            <span class="stage-category cat-mlops">Etapas 06 a 09</span>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Isolamento Cego & Diagnóstico</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Split 80/20, lacre no Cofre de Holdout (zero vazamento), EDA de treino e detecção de drift (KS/PSI).</p>
+        </div>
+
+        <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #c084fc; font-size: 13px;">FASE III</span>
+            <span class="stage-category cat-cv">Etapas 10 a 12</span>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Validação Cruzada & Seleção</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Nested CV (15×5 folds), testes de Shapiro-Wilk/Friedman/Nemenyi e seleção estatística do campeão.</p>
+        </div>
+
+        <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #f472b6; font-size: 13px;">FASE IV</span>
+            <span class="stage-category cat-cv">Etapas 13 a 14</span>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Tuning Final & Comitê</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Hiperparametrização final em 100% do treino e montagem do VotingRegressor + Motor Imobiliário.</p>
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #34d399; font-size: 13px;">FASE V</span>
+            <span class="stage-category cat-stat">Etapas 15 a 18</span>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Congelamento & Teste Cego</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Congelamento estrito, abertura do cofre com chave-mestra, avaliação no holdout e regras de negócio.</p>
+        </div>
+
+        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 10px; padding: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #22d3ee; font-size: 13px;">FASE VI</span>
+            <span class="stage-category cat-mlops">Etapas 19 a 20</span>
+          </div>
+          <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Empacotamento & Serving</div>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0;">Registro no MLflow Registry com alias @champion e disponibilização do serving REST com Prometheus.</p>
+        </div>
+      </div>
+
+      <!-- DIAGRAMA VISUAL DO PIPELINE DETERMINÍSTICO -->
+      <div style="background: #080d1a; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+          <h4 style="color: #67e8f9; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#67e8f9"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span>Mapa Visual da Jornada de Dados (20 Etapas Determinísticas)</span>
+          </h4>
+          <a href="fluxo_das_etapas.md" target="_blank" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); padding: 5px 12px; border-radius: 6px; font-size: 12px; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>Ver Documentação Completa (.md)</span> ↗
+          </a>
+        </div>
+
+        <div class="scroll-hint">
+          <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+          <span>Dica: arraste horizontalmente para visualizar todas as 6 fases do pipeline</span>
+        </div>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;">
+          <svg style="min-width: 880px; width: 100%; height: auto;" viewBox="0 0 960 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Bloco 1: Fase I -->
+            <rect x="10" y="20" width="135" height="100" rx="8" fill="#111827" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="77" y="42" fill="#60a5fa" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle">FASE I (01-05)</text>
+            <text x="77" y="62" fill="#fff" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle">Ingestão & Staging</text>
+            <text x="77" y="80" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5" text-anchor="middle">YAMLs + Excel</text>
+            <text x="77" y="96" fill="#67e8f9" font-family="JetBrains Mono" font-size="9" text-anchor="middle">SQLite Staging</text>
+
+            <line x1="145" y1="70" x2="168" y2="70" stroke="#6366f1" stroke-width="2"/>
+
+            <!-- Bloco 2: Fase II -->
+            <rect x="170" y="20" width="135" height="100" rx="8" fill="#111827" stroke="#eab308" stroke-width="1.5"/>
+            <text x="237" y="42" fill="#facc15" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle">FASE II (06-09)</text>
+            <text x="237" y="62" fill="#fff" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle">Isolamento Cego</text>
+            <text x="237" y="80" fill="#eab308" font-family="JetBrains Mono" font-size="9.5" text-anchor="middle">🔒 CofreHoldout 20%</text>
+            <text x="237" y="96" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">EDA & Drift (KS/PSI)</text>
+
+            <line x1="305" y1="70" x2="328" y2="70" stroke="#6366f1" stroke-width="2"/>
+
+            <!-- Bloco 3: Fase III -->
+            <rect x="330" y="20" width="145" height="100" rx="8" fill="#111827" stroke="#8b5cf6" stroke-width="1.5"/>
+            <text x="402" y="42" fill="#c084fc" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle">FASE III (10-12)</text>
+            <text x="402" y="62" fill="#fff" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle">Nested CV & Seleção</text>
+            <text x="402" y="80" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5" text-anchor="middle">15x5 Folds CV</text>
+            <text x="402" y="96" fill="#a5b4fc" font-family="JetBrains Mono" font-size="9" text-anchor="middle">Friedman/Nemenyi</text>
+
+            <line x1="475" y1="70" x2="498" y2="70" stroke="#6366f1" stroke-width="2"/>
+
+            <!-- Bloco 4: Fase IV -->
+            <rect x="500" y="20" width="135" height="100" rx="8" fill="#111827" stroke="#ec4899" stroke-width="1.5"/>
+            <text x="567" y="42" fill="#f472b6" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle">FASE IV (13-14)</text>
+            <text x="567" y="62" fill="#fff" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle">Tuning & Comitê</text>
+            <text x="567" y="80" fill="#94a3b8" font-family="JetBrains Mono" font-size="9.5" text-anchor="middle">100% Base Treino</text>
+            <text x="567" y="96" fill="#f472b6" font-family="JetBrains Mono" font-size="9" text-anchor="middle">VotingRegressor</text>
+
+            <line x1="635" y1="70" x2="658" y2="70" stroke="#6366f1" stroke-width="2"/>
+
+            <!-- Bloco 5: Fase V -->
+            <rect x="660" y="20" width="140" height="100" rx="8" fill="#111827" stroke="#10b981" stroke-width="1.5"/>
+            <text x="730" y="42" fill="#34d399" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle">FASE V (15-18)</text>
+            <text x="730" y="62" fill="#fff" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle">Teste Cego & Negócio</text>
+            <text x="730" y="80" fill="#34d399" font-family="JetBrains Mono" font-size="9.5" text-anchor="middle">❄️ Congelar ➔ 🗝️ Abrir</text>
+            <text x="730" y="96" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">32 Campos Negócio</text>
+
+            <line x1="800" y1="70" x2="823" y2="70" stroke="#6366f1" stroke-width="2"/>
+
+            <!-- Bloco 6: Fase VI -->
+            <rect x="825" y="20" width="125" height="100" rx="8" fill="#111827" stroke="#06b6d4" stroke-width="1.5"/>
+            <text x="887" y="42" fill="#22d3ee" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" text-anchor="middle">FASE VI (19-20)</text>
+            <text x="887" y="62" fill="#fff" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle">MLflow & Serving</text>
+            <text x="887" y="80" fill="#22d3ee" font-family="JetBrains Mono" font-size="9.5" text-anchor="middle">Tag @champion</text>
+            <text x="887" y="96" fill="#94a3b8" font-family="JetBrains Mono" font-size="9" text-anchor="middle">REST :8080</text>
+          </svg>
+        </div>
+
+        <!-- 3 BARREIRAS DE GOVERNANÇA -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 14px;">
+          <div style="background: rgba(234, 179, 8, 0.06); border-left: 3px solid #eab308; padding: 10px 14px; border-radius: 6px;">
+            <div style="font-weight: 700; color: #facc15; font-size: 12px;">🔒 BARREIRA 1: LACRE DO COFRE (ETAPA 07)</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Holdout (20%) bloqueado no cofre; zero vazamento para EDA, CV ou tuning.</div>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.06); border-left: 3px solid #10b981; padding: 10px 14px; border-radius: 6px;">
+            <div style="font-weight: 700; color: #34d399; font-size: 12px;">❄️ BARREIRA 2: CONGELAMENTO PRÉVIO (ETAPA 15)</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Imutabilidade dos hiperparâmetros exigida antes de abrir o cofre de teste cego.</div>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.06); border-left: 3px solid #06b6d4; padding: 10px 14px; border-radius: 6px;">
+            <div style="font-weight: 700; color: #22d3ee; font-size: 12px;">🚀 BARREIRA 3: EMPACOTAMENTO PYFUNC (ETAPA 19)</div>
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Estimador e Motor Imobiliário servidos como artefato único devolvendo 32 campos.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AS 20 ETAPAS EM DETALHE -->
+      <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <h4 style="color: #fff; margin: 0; font-size: 15px;">Detalhamento Passo a Passo das 20 Etapas</h4>
+        <span style="font-size: 12px; color: var(--text-muted);">Clique para expandir/recolher detalhes técnicos</span>
+      </div>
+
       <div class="pipeline-accordion">
-        <!-- Etapas 1 a 5 -->
+        <!-- ETAPA 01 -->
         <div class="stage-item open">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
               <span class="stage-number">01</span>
-              <span class="stage-name">Carregar Configurações</span>
+              <span class="stage-name">Carregar Configurações (<code>01_carregar_configuracoes</code>)</span>
               <span class="stage-category cat-dados">Config</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Lê <code>pipeline.yaml</code> e <code>modelos.yaml</code>, inicializa tipagem estrita com dataclasses imutáveis e prepara parâmetros de validação cruzada.
+            <strong>Classe:</strong> <code>Etapa01CarregarConfiguracoes</code><br>
+            Lê <code>pipeline.yaml</code> e <code>modelos.yaml</code> através do <code>ArmazemConfiguracao</code>. Instancia dataclasses imutáveis e tipadas contendo sementes, proporções de particionamento, métricas de avaliação e grades de hiperparâmetros.
           </div>
         </div>
 
+        <!-- ETAPA 02 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
               <span class="stage-number">02</span>
-              <span class="stage-name">Validar Configurações</span>
+              <span class="stage-name">Validar Configurações (<code>02_validar_configuracoes</code>)</span>
               <span class="stage-category cat-dados">Validação</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Valida consistência dos hiperparâmetros, seções de tuning (grid vs random) e existência das métricas solicitadas.
+            <strong>Classe:</strong> <code>Etapa02ValidarConfiguracoes</code><br>
+            Executa validações lógicas: garante que a configuração geral não seja nula e que pelo menos um modelo de regressão esteja habilitado na lista de modelos configurados.
           </div>
         </div>
 
+        <!-- ETAPA 03 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">03 - 05</span>
-              <span class="stage-name">Carga, Validação de Dados & Staging SQLite</span>
-              <span class="stage-category cat-dados">Dados</span>
+              <span class="stage-number">03</span>
+              <span class="stage-name">Carregar Dados (<code>03_carregar_dados</code>)</span>
+              <span class="stage-category cat-dados">Ingestão</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Carrega o arquivo <code>bairro_final_v3_engineered.xlsx</code>, valida limites físicos (quartos > 0, metragem válida, zonas reconhecidas) e armazena na camada de staging SQLite para reprodutibilidade.
+            <strong>Classe:</strong> <code>Etapa03CarregarDados</code><br>
+            O <code>CarregadorExcel</code> lê o dataset <code>dados/bairro_final_v3_engineered.xlsx</code> (5.712 registros) e remove preventivamente colunas com risco de vazamento de target ou identificadores desnecessários: <code>Código</code>, <code>Apartamento</code>, <code>valor_m2</code>, <code>media_valor_m2_bairro</code> e <code>media_valor_m2_zona</code>.
           </div>
         </div>
 
-        <!-- Etapas 6 a 7 -->
+        <!-- ETAPA 04 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">06 - 07</span>
-              <span class="stage-name">Separação & Bloqueio do Cofre de Holdout</span>
-              <span class="stage-category cat-mlops">Governança</span>
+              <span class="stage-number">04</span>
+              <span class="stage-name">Validar Dados & Quality Gate (<code>04_validar_dados</code>)</span>
+              <span class="stage-category cat-dados">Qualidade</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Separa 20% da base bruta (~1.142 registros) para teste cego final com semente fixa (42). Os dados são lacrados no <code>CofreHoldout</code>, proibindo qualquer acesso durante a EDA, treino ou tuning.
+            <strong>Classe:</strong> <code>Etapa04ValidarDados</code><br>
+            Executa o <code>ValidadorContrato</code> checando presença do target (<code>Valor</code>), tipos primitivos e limites físicos (quartos &ge; 0, banheiros &ge; 0, metragem &gt; 0). Calcula métricas de qualidade de dados (missing, outliers por IQR, assimetria) e as envia à telemetria Prometheus.
           </div>
         </div>
 
-        <!-- Etapas 8 a 9 -->
+        <!-- ETAPA 05 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">08 - 09</span>
-              <span class="stage-name">EDA e Detecção de Data Drift</span>
-              <span class="stage-category cat-dados">Auditoria</span>
+              <span class="stage-number">05</span>
+              <span class="stage-name">Persistência em Staging (<code>05_executar_staging</code>)</span>
+              <span class="stage-category cat-dados">Staging</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Gera estatísticas descritivas sobre os 80% de desenvolvimento e calcula testes estatísticos (Kolmogorov-Smirnov / PSI) para monitorar estabilidade distributiva.
+            <strong>Classe:</strong> <code>Etapa05Staging</code><br>
+            O <code>RepositorioStaging</code> armazena uma cópia imutável dos dados brutos validados na tabela SQLite <code>apartamentos_staging</code>, viabilizando rastreabilidade histórica e auditoria forense dos dados ingeridos.
           </div>
         </div>
 
-        <!-- Etapa 10 a 12 -->
+        <!-- ETAPA 06 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">10 - 12</span>
-              <span class="stage-name">Nested Cross-Validation, Testes Estatísticos & Seleção</span>
+              <span class="stage-number">06</span>
+              <span class="stage-name">Separação de Holdout (<code>06_separar_holdout</code>)</span>
+              <span class="stage-category cat-mlops">Particionamento</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa06SepararHoldout</code><br>
+            O <code>DivisorEstratificado</code> divide os dados com semente determinística fixa (42) em <strong>80% para desenvolvimento</strong> (~4.570 amostras) e <strong>20% para holdout de teste cego</strong> (~1.142 amostras).
+          </div>
+        </div>
+
+        <!-- ETAPA 07 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">07</span>
+              <span class="stage-name">Bloqueio do Cofre de Holdout (<code>07_bloquear_holdout</code>)</span>
+              <span class="stage-category cat-mlops">Governança Anti-Leakage</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa07BloquearHoldout</code><br>
+            <strong>Primeira Barreira de Integridade:</strong> O conjunto de teste de 20% é transferido para o <code>CofreHoldout</code> em estado bloqueado. Nenhuma etapa de EDA, pré-processamento, validação cruzada ou tuning tem acesso de leitura a estes dados, eliminando 100% do risco de contaminação (data leakage).
+          </div>
+        </div>
+
+        <!-- ETAPA 08 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">08</span>
+              <span class="stage-name">Análise Exploratória de Dados (<code>08_executar_eda</code>)</span>
+              <span class="stage-category cat-dados">Diagnóstico</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa08Eda</code><br>
+            A <code>AnaliseExploratoria</code> gera perfis estatísticos descritivos, correlações e matrizes de dispersão <strong>exclusivamente sobre os 80% de desenvolvimento</strong>.
+          </div>
+        </div>
+
+        <!-- ETAPA 09 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">09</span>
+              <span class="stage-name">Auditoria de Data Drift (<code>09_executar_drift</code>)</span>
+              <span class="stage-category cat-dados">Deriva</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa09Drift</code><br>
+            O <code>DetectorDrift</code> calcula as métricas de estabilidade distributiva para as variáveis numéricas (Metragem, Quartos, Banheiros, Vagas): teste Kolmogorov-Smirnov (estatística KS e p-valor), Índice de Estabilidade Populacional (PSI) e distância de Wasserstein, registrando os alertas no Prometheus.
+          </div>
+        </div>
+
+        <!-- ETAPA 10 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">10</span>
+              <span class="stage-name">Nested Cross-Validation (<code>10_executar_nested_cv</code>)</span>
               <span class="stage-category cat-cv">Modelagem</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Executa a <strong>Validação Cruzada Aninhada</strong> (15 folds externos × 5 folds internos de tuning). Aplica os testes de <strong>Friedman, Nemenyi e Shapiro-Wilk</strong> nos resíduos para eleger os Top K modelos de forma estatisticamente comprovada.
+            <strong>Classe:</strong> <code>Etapa10NestedCv</code><br>
+            Executa a validação cruzada aninhada de ponta a ponta: <strong>Loop Externo</strong> com 15 folds para avaliação de generalização e <strong>Loop Interno</strong> com 5 folds para tuning hiperparamétrico isolado (via GridSearchCV ou RandomizedSearchCV conforme o estimador). O pré-processamento (One-Hot, Imputação, RobustScaler) é ajustado rigorosamente dentro de cada fold.
           </div>
         </div>
 
-        <!-- Etapa 13 a 14 -->
+        <!-- ETAPA 11 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">13 - 14</span>
-              <span class="stage-name">Tuning Final & Montagem do VotingRegressor</span>
-              <span class="stage-category cat-cv">Ensemble</span>
+              <span class="stage-number">11</span>
+              <span class="stage-name">Testes de Hipótese Estatística (<code>11_executar_estatistica</code>)</span>
+              <span class="stage-category cat-stat">Estatística</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Realiza o tuning final nos 100% da base de desenvolvimento para os modelos vencedores e monta o comitê <code>VotingRegressor</code> que combina as estimativas.
+            <strong>Classe:</strong> <code>Etapa11Estatistica</code><br>
+            Extrai a matriz pareada de resíduos e RMSE dos folds externos e aplica os testes formais de significância: <strong>Shapiro-Wilk</strong> (normalidade dos resíduos), <strong>Teste de Friedman</strong> (diferenças entre rankings) e pós-testes de <strong>Nemenyi e Tukey</strong> para aferir quais modelos são estatisticamente indistinguíveis.
           </div>
         </div>
 
-        <!-- Etapa 15 a 18 -->
+        <!-- ETAPA 12 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">15 - 18</span>
-              <span class="stage-name">Abertura do Holdout & Avaliação de Negócio</span>
-              <span class="stage-category cat-stat">Homologação</span>
+              <span class="stage-number">12</span>
+              <span class="stage-name">Seleção do Modelo Campeão / Comitê (<code>12_selecionar_modelo</code>)</span>
+              <span class="stage-category cat-cv">Seleção</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Congela os hiperparâmetros, abre o cofre do Holdout e gera as métricas finais imparciais (RMSE, MAE, R², MAPE) e calcula as tabelas de referência geográfica (medianas por bairro e zona).
+            <strong>Classe:</strong> <code>Etapa12SelecaoModelo</code><br>
+            O <code>SeletorCampeao</code> elege o modelo individual vencedor ou os Top K modelos de ponta que formarão o comitê com base no ranking de RMSE e no critério de corte estatístico de Friedman (p-valor &lt; 0.05).
           </div>
         </div>
 
-        <!-- Etapa 19 a 20 -->
+        <!-- ETAPA 13 -->
         <div class="stage-item">
           <div class="stage-header" onclick="toggleStage(this)">
             <div class="stage-left">
-              <span class="stage-number">19 - 20</span>
-              <span class="stage-name">Publicação no MLflow Registry & Serving</span>
+              <span class="stage-number">13</span>
+              <span class="stage-name">Tuning Final de Hiperparâmetros (<code>13_tuning_final</code>)</span>
+              <span class="stage-category cat-cv">Otimização</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa13TuningFinal</code><br>
+            Ajusta os estimadores selecionados em 100% da base de desenvolvimento (80% da base total), executando a busca final de hiperparâmetros ótimos para cada modelo componente. Constrói a estrutura do comitê com o <code>FabricaComite</code>.
+          </div>
+        </div>
+
+        <!-- ETAPA 14 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">14</span>
+              <span class="stage-name">Treinamento Final & Motor Imobiliário (<code>14_treinamento_final</code>)</span>
+              <span class="stage-category cat-cv">Treinamento</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa14TreinamentoFinal</code><br>
+            Ajusta o estimador final completo (ex.: <code>VotingRegressor</code>) sobre todos os dados de desenvolvimento e inicializa o <code>MotorImobiliario</code>, gerando através do <code>AgregadorHierarquico</code> as tabelas de referência agregadas por Bairro, por Zona e Globais.
+          </div>
+        </div>
+
+        <!-- ETAPA 15 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">15</span>
+              <span class="stage-name">Congelamento Estrito de Configuração (<code>15_congelar_configuracao</code>)</span>
+              <span class="stage-category cat-mlops">Trava de Segurança</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa15CongelarConfiguracao</code><br>
+            <strong>Segunda Barreira de Integridade:</strong> Altera <code>contexto.estado_congelado = True</code>. A partir deste ponto, o modelo, seus pesos e regras imobiliárias tornam-se formalmente imutáveis, blindando o pipeline contra retreinos ou sobreajustes induzidos após contato com o teste.
+          </div>
+        </div>
+
+        <!-- ETAPA 16 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">16</span>
+              <span class="stage-name">Abertura do Cofre de Holdout (<code>16_abrir_holdout</code>)</span>
+              <span class="stage-category cat-mlops">Acesso Autorizado</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa16AbrirHoldout</code><br>
+            Valida formalmente se o estado está congelado antes de liberar o cofre. Se qualquer componente tentar acessar o holdout com o modelo destravado, a esteira aborta imediatamente com <code>AssertionError</code>.
+          </div>
+        </div>
+
+        <!-- ETAPA 17 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">17</span>
+              <span class="stage-name">Avaliação Cega do Holdout (<code>17_avaliar_holdout</code>)</span>
+              <span class="stage-category cat-stat">Homologação Cega</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa17AvaliacaoHoldout</code><br>
+            Gera previsões para os 20% do holdout nunca antes vistos e calcula as métricas definitivas de homologação: RMSE, MAE, R², MAPE em três níveis: Global (Ribeirão Preto), por Zona e por Bairro. Exporta a distribuição de erros e resíduos para o Prometheus.
+          </div>
+        </div>
+
+        <!-- ETAPA 18 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">18</span>
+              <span class="stage-name">Execução das Regras de Negócio (<code>18_executar_regras_negocio</code>)</span>
+              <span class="stage-category cat-stat">Enriquecimento</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa18RegrasNegocio</code><br>
+            Aplica o <code>MotorImobiliario</code> gerando o payload comercial completo com os <strong>32 elementos de negócio</strong>: índices comparativos de m², desvios percentuais sobre médias históricas, simulações de desconto de fechamento (5%, 10%, 15%) e corredores seguros de negociação.
+          </div>
+        </div>
+
+        <!-- ETAPA 19 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">19</span>
+              <span class="stage-name">Rastreamento & Registro no MLflow (<code>19_rastrear_mlflow</code>)</span>
+              <span class="stage-category cat-mlops">Registro</span>
+            </div>
+            <span>▾</span>
+          </div>
+          <div class="stage-content">
+            <strong>Classe:</strong> <code>Etapa19RastreamentoMlflow</code><br>
+            <strong>Terceira Barreira de Integridade:</strong> Empacota o pipeline Scikit-Learn e o <code>MotorImobiliario</code> em um wrapper unificado <code>mlflow.pyfunc</code>. Registra o artefato no MLflow Model Registry com assinatura de 32 campos de saída, métricas de holdout e promove a versão com a tag <code>@champion</code>.
+          </div>
+        </div>
+
+        <!-- ETAPA 20 -->
+        <div class="stage-item">
+          <div class="stage-header" onclick="toggleStage(this)">
+            <div class="stage-left">
+              <span class="stage-number">20</span>
+              <span class="stage-name">Disponibilização do Serving REST (<code>20_disponibilizar_serving</code>)</span>
               <span class="stage-category cat-mlops">Produção</span>
             </div>
             <span>▾</span>
           </div>
           <div class="stage-content">
-            Empacota o modelo completo (pré-processamento + VotingRegressor + Motor Imobiliário) no MLflow Model Registry, promove a versão com o alias <code>champion</code> e exporta métricas para o Prometheus.
+            <strong>Classe:</strong> <code>Etapa20Serving</code><br>
+            Ponto conclusivo da esteira que sinaliza a prontidão operacional para o container de serving (porta 8080 para inferência REST e porta 8000 com métricas ASGI do Prometheus).
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 4. VALIDAÇÃO CRUZADA E TUNING -->
+    <!-- 5. VALIDAÇÃO CRUZADA E TUNING -->
     <section id="nested-cv" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
         </div>
-        <h2>4. Nested Cross-Validation & Tuning de Hiperparâmetros</h2>
+        <h2>5. Nested Cross-Validation & Tuning de Hiperparâmetros</h2>
       </div>
 
       <div class="grid-2">
@@ -1181,56 +2332,439 @@
         </div>
 
         <div class="glass-card">
-          <h3 style="color: #fff; margin-bottom: 12px;">Estratégias Configuradas em <code>modelos.yaml</code></h3>
+          <h3 style="color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>Estratégias Configuradas em</span> <code>modelos.yaml</code>
+          </h3>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;">
+            Mapeamento dos algoritmos candidatos, métodos de busca e faixas de hiperparâmetros explorados no <em>Inner Loop</em> da validação cruzada aninhada:
+          </p>
           <div class="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Modelo</th>
-                  <th>Estratégia</th>
-                  <th>Parâmetros Chave</th>
+                  <th style="width: 140px;">Modelo</th>
+                  <th style="width: 130px;">Estratégia</th>
+                  <th>Parâmetros Chave & Faixas de Busca</th>
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td><strong>Regressão Linear</strong></td>
+                  <td><span class="tag tag-accent" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; border-color: rgba(100, 116, 139, 0.3);">Baseline</span></td>
+                  <td><code>fit_intercept: true</code>, <code>n_jobs: 3</code> <em>(sem busca de hiperparâmetros)</em></td>
+                </tr>
                 <tr>
                   <td><strong>Ridge</strong></td>
                   <td><span class="tag tag-cyan">Grid</span></td>
                   <td><code>alpha: [0.001..100.0]</code>, <code>solver: [auto, cholesky, lsqr]</code></td>
                 </tr>
                 <tr>
-                  <td><strong>Árvore</strong></td>
+                  <td><strong>Lasso</strong></td>
                   <td><span class="tag tag-cyan">Grid</span></td>
-                  <td><code>max_depth: [4..12]</code>, <code>min_samples_split: [2, 5, 10]</code></td>
+                  <td><code>alpha: [0.001..10.0]</code>, <code>selection: [cyclic, random]</code></td>
+                </tr>
+                <tr>
+                  <td><strong>ElasticNet</strong></td>
+                  <td><span class="tag tag-cyan">Grid</span></td>
+                  <td><code>alpha: [0.01..10.0]</code>, <code>l1_ratio: [0.1..0.9]</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Árvore de Decisão</strong></td>
+                  <td><span class="tag tag-cyan">Grid</span></td>
+                  <td><code>max_depth: [4..12, None]</code>, <code>min_samples_split: [2, 5, 10]</code>, <code>min_samples_leaf: [1, 2, 4]</code></td>
                 </tr>
                 <tr>
                   <td><strong>Random Forest</strong></td>
                   <td><span class="tag tag-primary">Random (20)</span></td>
-                  <td><code>n_estimators: [100..300]</code>, <code>max_features: [1.0, sqrt]</code></td>
+                  <td><code>n_estimators: [100..300]</code>, <code>max_depth: [8..20, None]</code>, <code>max_features: [1.0, sqrt, 0.5]</code>, <code>n_jobs: 3</code></td>
+                </tr>
+                <tr>
+                  <td><strong>SVR</strong></td>
+                  <td><span class="tag tag-primary">Random (15)</span></td>
+                  <td><code>C: [0.1..1000.0]</code>, <code>epsilon: [0.01..0.2]</code>, <code>gamma: [scale, auto, 0.01, 0.1]</code>, <code>kernel: [rbf]</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Rede Neural (MLP)</strong></td>
+                  <td><span class="tag tag-primary">Random (15)</span></td>
+                  <td><code>hidden_layer_sizes: [64..128]</code>, <code>activation: [relu, tanh]</code>, <code>alpha: [0.0001..0.1]</code>, <code>lr: [0.001..0.01]</code></td>
                 </tr>
                 <tr>
                   <td><strong>XGBoost</strong></td>
                   <td><span class="tag tag-primary">Random (25)</span></td>
-                  <td><code>learning_rate: [0.01..0.1]</code>, <code>max_depth: [3..9]</code></td>
+                  <td><code>n_estimators: [100..300]</code>, <code>max_depth: [3..9]</code>, <code>learning_rate: [0.01..0.1]</code>, <code>subsample: [0.7..1.0]</code>, <code>n_jobs: 3</code></td>
                 </tr>
                 <tr>
                   <td><strong>LightGBM</strong></td>
                   <td><span class="tag tag-primary">Random (25)</span></td>
-                  <td><code>num_leaves: [15..127]</code>, <code>min_child_samples</code></td>
+                  <td><code>n_estimators: [100..300]</code>, <code>num_leaves: [15..127]</code>, <code>min_child_samples: [10..50]</code>, <code>learning_rate: [0.01..0.1]</code>, <code>n_jobs: 3</code></td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      <!-- Comparativo RepeatedKFold vs KFold -->
+      <div class="glass-card" style="margin-top: 24px; border-left: 4px solid var(--primary);">
+        <h3 style="color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <span style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; padding: 4px 10px; border-radius: 6px; font-size: 14px;">Metodologia de Particionamento</span>
+          RepeatedKFold (Externo) vs. KFold (Interno): Papéis e Sinergia
+        </h3>
+        <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 13.5px;">
+          O projeto adota uma estratégia deliberadamente assimétrica de particionamento na validação aninhada para conciliar <strong>máximo rigor estatístico na avaliação</strong> com <strong>viabilidade de tempo no tuning</strong>:
+        </p>
+
+        <div class="grid-2" style="margin-bottom: 20px;">
+          <div style="background: #090e1a; padding: 18px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="tag tag-cyan">Laço Externo (Outer Loop)</span>
+              <code style="color: #38bdf8;">ParticionadorExterno</code>
+            </div>
+            <h4 style="color: #fff; font-size: 16px; margin-bottom: 8px;">RepeatedKFold (5 splits × 3 repetições = 15 Folds)</h4>
+            <ul style="color: var(--text-muted); font-size: 13px; line-height: 1.6; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;">
+              <li><strong>Objetivo:</strong> Avaliação cega e não enviesada do modelo em dados nunca vistos.</li>
+              <li><strong>Redução de Variância:</strong> Repetir 3 vezes suaviza a volatilidade causada por bairros nobres e outliers pontuais.</li>
+              <li><strong>Blocos Pareados para Friedman:</strong> Gera 15 scores externos compartilhados entre todos os algoritmos, viabilizando o Teste de Friedman e Teste de Nemenyi.</li>
+              <li><strong>Cálculo de Desvio Padrão:</strong> Permite calcular <code>ddof=0</code> confiável para medir a sensibilidade do modelo.</li>
+            </ul>
+          </div>
+
+          <div style="background: #090e1a; padding: 18px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="tag tag-primary">Laço Interno (Inner Loop)</span>
+              <code style="color: #a5b4fc;">ParticionadorInterno</code>
+            </div>
+            <h4 style="color: #fff; font-size: 16px; margin-bottom: 8px;">KFold Simples (5 splits com Shuffle)</h4>
+            <ul style="color: var(--text-muted); font-size: 13px; line-height: 1.6; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;">
+              <li><strong>Objetivo:</strong> Otimização e eleição dos melhores hiperparâmetros (GridSearch / RandomSearch).</li>
+              <li><strong>Isolamento Estrito:</strong> Opera exclusivamente sobre a partição de treino (80% do fold externo), sem ver o teste externo.</li>
+              <li><strong>Eficiência Computacional:</strong> Evita explosão combinatorial (15 × 5 = 75 treinos vs. 15 × 15 = 225 treinos por modelo), economizando 66% de tempo de máquina.</li>
+              <li><strong>Foco em Ranquear Configurações:</strong> 5 splits bastam para indicar a melhor configuração de parâmetros.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Característica</th>
+                <th>RepeatedKFold (Laço Externo)</th>
+                <th>KFold Simples (Laço Interno)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Classe Python</strong></td>
+                <td><code>app_build.validacao_cruzada.particionador_externo.ParticionadorExterno</code></td>
+                <td><code>app_build.validacao_cruzada.particionador_interno.ParticionadorInterno</code></td>
+              </tr>
+              <tr>
+                <td><strong>Scikit-Learn</strong></td>
+                <td><code>sklearn.model_selection.RepeatedKFold</code></td>
+                <td><code>sklearn.model_selection.KFold(shuffle=True, random_state=42)</code></td>
+              </tr>
+              <tr>
+                <td><strong>Quantidade de Folds</strong></td>
+                <td><strong>15 folds</strong> (5 splits × 3 repetições)</td>
+                <td><strong>5 folds</strong> (5 splits, 1 repetição)</td>
+              </tr>
+              <tr>
+                <td><strong>Volume Amostral</strong></td>
+                <td>Base de desenvolvimento inteira (~4.570 imóveis)</td>
+                <td>Subconjunto de treino de cada fold externo (~3.656 imóveis)</td>
+              </tr>
+              <tr>
+                <td><strong>Finalidade Primária</strong></td>
+                <td>Estimar erro de generalização e estabilidade do modelo</td>
+                <td>Selecionar o melhor ponto na grade de hiperparâmetros</td>
+              </tr>
+              <tr>
+                <td><strong>Risco de Data Leakage</strong></td>
+                <td>Zero: o fold de teste externo fica estritamente cego</td>
+                <td>Zero: transformadores (imputers, scalers, encoders) são ajustados dentro de cada fold</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Dinâmica Modelo a Modelo -->
+        <h4 style="color: #fff; font-size: 15px; margin: 20px 0 10px 0; display: flex; align-items: center; gap: 8px;">
+          <span>Operação do RepeatedKFold e KFold para Cada Modelo de Regressão</span>
+        </h4>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;">
+          Em cada um dos 10 algoritmos, o <strong>RepeatedKFold</strong> atua como auditor externo independente gerando 15 medições pareadas, enquanto o <strong>KFold</strong> orquestra o ajuste de hiperparâmetros no ambiente de treino:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 140px;">Modelo</th>
+                <th>Laço Externo: RepeatedKFold (15 Folds)</th>
+                <th>Laço Interno: KFold (5 Folds)</th>
+                <th>Objetivo & Ganho Científico</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Regressão Linear</strong></td>
+                <td>Treinado 15 vezes e avaliado nos 15 folds cegos; gera scores de referência básica.</td>
+                <td><em>Não acionado (EstrategiaNula)</em>; ajusta diretamente sem overhead de busca.</td>
+                <td>Serve como o <strong>baseline estatístico</strong> mínimo que os modelos complexos precisam superar.</td>
+              </tr>
+              <tr>
+                <td><strong>Ridge</strong></td>
+                <td>Mede se a regularização L2 ($\alpha \sum \beta^2$) estabiliza os coeficientes nos 15 folds.</td>
+                <td>Roda <code>GridSearchCV</code> (18 comb.: 6 alphas × 3 solvers) nos 5 splits de treino.</td>
+                <td>Elimina instabilidades decorrentes de multicolinearidade entre metragem, vagas e banheiros.</td>
+              </tr>
+              <tr>
+                <td><strong>Lasso</strong></td>
+                <td>Avalia se a seleção de features L1 ($\alpha \sum |\beta|$) zera coeficientes de forma estável.</td>
+                <td>Roda <code>GridSearchCV</code> (10 comb.: 5 alphas × 2 selections) nos 5 splits internos.</td>
+                <td>Verifica se a seleção esparsa de bairros mantém poder preditivo uniforme entre partições.</td>
+              </tr>
+              <tr>
+                <td><strong>ElasticNet</strong></td>
+                <td>Testa a generalização da penalidade mista L1+L2 em 15 subamostras diferentes de imóveis.</td>
+                <td>Roda <code>GridSearchCV</code> (20 comb.: 4 alphas × 5 l1_ratios) nos 5 splits internos.</td>
+                <td>Equilibra dinamicamente a eliminação de ruído e a preservação de variáveis correlacionadas.</td>
+              </tr>
+              <tr>
+                <td><strong>Árvore</strong></td>
+                <td>Evidencia a alta variância típica de árvores individuais via desvio padrão nos 15 folds.</td>
+                <td>Roda <code>GridSearchCV</code> (45 comb.: 5 profundidades × 3 splits × 3 folhas).</td>
+                <td>Poda a profundidade da árvore para evitar memorização excessiva dos dados de treino.</td>
+              </tr>
+              <tr>
+                <td><strong>Random Forest</strong></td>
+                <td>Comprova como o comitê de 100 a 300 árvores (*bagging*) reduz a variância entre os 15 folds.</td>
+                <td>Roda <code>RandomizedSearchCV</code> (20 iterações aleatórias entre 405 combinações).</td>
+                <td>Atinge o ponto ótimo de <code>n_estimators</code> e <code>max_depth</code> com baixo custo de máquina.</td>
+              </tr>
+              <tr>
+                <td><strong>SVR</strong></td>
+                <td>Avalia a robustez do hiperplano de margem-$\epsilon$ com kernel RBF contra outliers nos 15 folds.</td>
+                <td>Roda <code>RandomizedSearchCV</code> (15 iterações amostrando $C$, $\epsilon$ e $\gamma$).</td>
+                <td>Mapeia relações não-lineares sem que o cálculo de matrizes $O(N^2)$ trave o pipeline.</td>
+              </tr>
+              <tr>
+                <td><strong>Rede Neural (MLP)</strong></td>
+                <td>Testa se a arquitetura de camadas densas generaliza ou se diverge nas partições externas.</td>
+                <td>Roda <code>RandomizedSearchCV</code> (15 iterações amostrando topologias e taxas de aprendizado).</td>
+                <td>Ajusta camadas e neurônios com early stopping, prevenindo ciclos infinitos de backpropagation.</td>
+              </tr>
+              <tr>
+                <td><strong>XGBoost</strong></td>
+                <td>Avalia se o boosting por gradiente de segunda ordem mantém resíduos uniformes nos 15 folds.</td>
+                <td>Roda <code>RandomizedSearchCV</code> (25 iterações entre mais de 8.700 combinações possíveis).</td>
+                <td>Calibra <code>learning_rate</code>, <code>max_depth</code> e <code>reg_lambda</code>, alcançando alta precisão.</td>
+              </tr>
+              <tr>
+                <td><strong>LightGBM</strong></td>
+                <td>Mede a estabilidade da árvore construída por folhas (*leaf-wise*) nos 15 conjuntos cegos.</td>
+                <td>Roda <code>RandomizedSearchCV</code> (25 iterações amostrando <code>num_leaves</code> e amostragem).</td>
+                <td>Aproveita a velocidade dos histogramas para convergir rapidamente com excelente aderência.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Comparativo GridSearchCV vs RandomizedSearchCV -->
+      <div class="glass-card" style="margin-top: 24px; border-left: 4px solid var(--accent);">
+        <h3 style="color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+          <span style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; padding: 4px 10px; border-radius: 6px; font-size: 14px;">Estratégias de Tuning</span>
+          GridSearchCV vs. RandomizedSearchCV: Otimização de Hiperparâmetros
+        </h3>
+        <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 13.5px;">
+          O tuning de hiperparâmetros é implementado através do padrão de projeto <strong>Strategy</strong> (<a href="#arquitetura" style="color: var(--accent);"><code>FabricaTuning</code></a> e <code>ContratoTuning</code>), selecionando dinamicamente a abordagem mais eficiente para cada família de modelo:
+        </p>
+
+        <div class="grid-2" style="margin-bottom: 20px;">
+          <div style="background: #090e1a; padding: 18px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="tag tag-cyan">GridSearchCV</span>
+              <code style="color: #38bdf8;">EstrategiaGrade</code>
+            </div>
+            <h4 style="color: #fff; font-size: 16px; margin-bottom: 8px;">Busca Exaustiva em Grade</h4>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
+              Calcula o <strong>produto cartesiano</strong> de todos os parâmetros declarados na grade. Se houver 6 alphas e 3 solvers, testa todas as 18 combinações possíveis.
+            </p>
+            <ul style="color: var(--text-muted); font-size: 12.5px; line-height: 1.5; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+              <li><strong>Vantagem:</strong> Determinístico; garante encontrar o melhor ponto dentro da grade fixada.</li>
+              <li><strong>Desvantagem:</strong> Maldição da dimensionalidade ($O(k^d)$); inviável para muitos hiperparâmetros.</li>
+              <li><strong>Modelos no Projeto:</strong> <code>Ridge</code> (18 comb.), <code>Lasso</code> (10 comb.), <code>ElasticNet</code> (20 comb.), <code>Árvore</code> (45 comb.).</li>
+            </ul>
+          </div>
+
+          <div style="background: #090e1a; padding: 18px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="tag tag-primary">RandomizedSearchCV</span>
+              <code style="color: #a5b4fc;">EstrategiaAleatoria</code>
+            </div>
+            <h4 style="color: #fff; font-size: 16px; margin-bottom: 8px;">Amostragem Aleatória Uniforme</h4>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 10px;">
+              Amostra aleatoriamente $N$ combinações candidatas (<a href="https://www.jmlr.org/papers/v13/bergstra12a.html" target="_blank" style="color: var(--secondary);">Bergstra & Bengio, 2012</a>), limitando o tempo por <code>n_iter</code>.
+            </p>
+            <ul style="color: var(--text-muted); font-size: 12.5px; line-height: 1.5; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+              <li><strong>Vantagem:</strong> Custo computacional fixo e controlado; explora espaços multidimensionais amplos.</li>
+              <li><strong>Desvantagem:</strong> Estocástico; requer semente aleatória fixa (<code>random_state: 42</code>) para reproduzir.</li>
+              <li><strong>Modelos no Projeto:</strong> <code>Random Forest</code> (20 iter.), <code>SVR</code> (15 iter.), <code>MLP</code> (15 iter.), <code>XGBoost</code> (25 iter.), <code>LightGBM</code> (25 iter.).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-container" style="margin-bottom: 20px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Critério de Comparação</th>
+                <th>GridSearchCV (EstrategiaGrade)</th>
+                <th>RandomizedSearchCV (EstrategiaAleatoria)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Mecanismo de Exploração</strong></td>
+                <td>Varredura combinatória exaustiva (produto cartesiano completo)</td>
+                <td>Amostragem aleatória uniforme de $N$ configurações fixadas</td>
+              </tr>
+              <tr>
+                <td><strong>Complexidade Computacional</strong></td>
+                <td>Exponencial: cresce com a multiplicação dos hiperparâmetros</td>
+                <td>Linear: delimitada estritamente pelo parâmetro <code>n_iter</code></td>
+              </tr>
+              <tr>
+                <td><strong>Tempo por Ajuste Unitário</strong></td>
+                <td>Ultra-rápido (álgebra analítica ou árvore simples: 2 a 10 ms)</td>
+                <td>Moderado a pesado (ensembles, matrizes de kernel ou redes: 50 a 800 ms)</td>
+              </tr>
+              <tr>
+                <td><strong>Indicação Recomendada</strong></td>
+                <td>Espaços pequenos e discretos com poucos hiperparâmetros ($\le 3$)</td>
+                <td>Modelos complexos com muitos hiperparâmetros contínuos ($\ge 4$)</td>
+              </tr>
+              <tr>
+                <td><strong>Garantia do Ótimo</strong></td>
+                <td>Garante o melhor resultado estritamente restrito à grade definida</td>
+                <td>Gera aproximação de alta probabilidade (&gt; 99% com 25 iterações)</td>
+              </tr>
+              <tr>
+                <td><strong>Objetivo de Otimização</strong></td>
+                <td colspan="2" style="text-align: center;"><code>scoring: neg_root_mean_squared_error</code> com <code>refit: true</code> automático</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Racional da Escolha Modelo a Modelo -->
+        <h4 style="color: #fff; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <span>Por que essa divisão? A Lógica de Engenharia e o Efeito Multiplicador da Nested CV</span>
+        </h4>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;">
+          Na nossa arquitetura, cada combinação de hiperparâmetros é treinada <strong>75 vezes</strong> (15 folds externos $\times$ 5 folds internos). Se aplicássemos <code>GridSearchCV</code> no XGBoost, seriam mais de <strong>650.000 treinamentos</strong>, tornando o pipeline inviável. Abaixo está o racional de engenharia adotado:
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Modelo</th>
+                <th>Estratégia</th>
+                <th>Combinações na Grade</th>
+                <th>Treinos com Grid (15×5)</th>
+                <th>Treinos Efetivos (com Random)</th>
+                <th>Racional da Decisão</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Ridge</strong></td>
+                <td><span class="tag tag-cyan">Grid</span></td>
+                <td>18</td>
+                <td>1.350 fits</td>
+                <td><strong>1.350 fits</strong> (~3 seg)</td>
+                <td>Álgebra linear analítica (Cholesky/LSQR). Convergência quase instantânea; grade cobre 6 ordens de magnitude de regularização.</td>
+              </tr>
+              <tr>
+                <td><strong>Lasso</strong></td>
+                <td><span class="tag tag-cyan">Grid</span></td>
+                <td>10</td>
+                <td>750 fits</td>
+                <td><strong>750 fits</strong> (~2 seg)</td>
+                <td>Coordinate Descent rápido. Apenas 10 combinações discretas cobrindo penalidades de dispersão.</td>
+              </tr>
+              <tr>
+                <td><strong>ElasticNet</strong></td>
+                <td><span class="tag tag-cyan">Grid</span></td>
+                <td>20</td>
+                <td>1.500 fits</td>
+                <td><strong>1.500 fits</strong> (~4 seg)</td>
+                <td>Grade enxuta calibrando o equilíbrio L1/L2 (<code>l1_ratio</code> de 0.1 a 0.9). O Grid garante varredura completa em segundos.</td>
+              </tr>
+              <tr>
+                <td><strong>Árvore</strong></td>
+                <td><span class="tag tag-cyan">Grid</span></td>
+                <td>45</td>
+                <td>3.375 fits</td>
+                <td><strong>3.375 fits</strong> (~5 seg)</td>
+                <td>Uma única árvore leva menos de 3 ms por ajuste. 45 combinações testam exaustivamente profundidades de 4 a 12 e podas.</td>
+              </tr>
+              <tr>
+                <td><strong>Random Forest</strong></td>
+                <td><span class="tag tag-primary">Random (20)</span></td>
+                <td>405</td>
+                <td>30.375 fits ⚠️</td>
+                <td><strong>1.500 fits</strong> (~45 seg)</td>
+                <td>Treinar 405 florestas de até 300 árvores travaria o pipeline. <code>n_iter: 20</code> reduz o custo em 95% mantendo alta precisão.</td>
+              </tr>
+              <tr>
+                <td><strong>SVR</strong></td>
+                <td><span class="tag tag-primary">Random (15)</span></td>
+                <td>80</td>
+                <td>6.000 fits ⚠️</td>
+                <td><strong>1.125 fits</strong> (~35 seg)</td>
+                <td>O kernel RBF tem complexidade $O(N^2)$ a $O(N^3)$. 15 iterações amostram $C$ e $\gamma$ de forma contínua e eficiente.</td>
+              </tr>
+              <tr>
+                <td><strong>Rede Neural (MLP)</strong></td>
+                <td><span class="tag tag-primary">Random (15)</span></td>
+                <td>96</td>
+                <td>7.200 fits ⚠️</td>
+                <td><strong>1.125 fits</strong> (~2 min)</td>
+                <td>Backpropagation de centenas de épocas por ajuste. 15 iterações com early stopping fixam um teto rigoroso de tempo.</td>
+              </tr>
+              <tr>
+                <td><strong>XGBoost</strong></td>
+                <td><span class="tag tag-primary">Random (25)</span></td>
+                <td>&gt; 8.700</td>
+                <td><strong>650.000 fits 🛑</strong></td>
+                <td><strong>1.875 fits</strong> (~50 seg)</td>
+                <td>Espaço de 8 hiperparâmetros contínuos. O Grid Search é <strong>matematicamente inviável</strong>. 25 iterações garantem 99,3% de chance de ótimo.</td>
+              </tr>
+              <tr>
+                <td><strong>LightGBM</strong></td>
+                <td><span class="tag tag-primary">Random (25)</span></td>
+                <td>&gt; 5.100</td>
+                <td><strong>380.000 fits 🛑</strong></td>
+                <td><strong>1.875 fits</strong> (~35 seg)</td>
+                <td>Árvores por folhas (leaf-wise) com regularização múltipla. O Random Search explora folhas e taxas com tempo controlado.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
-    <!-- 5. CONTRATO DA API (32 CAMPOS) -->
+    <!-- 6. CONTRATO DA API (32 CAMPOS) -->
     <section id="contrato-api" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
         </div>
-        <h2>5. Contrato de Integração da API</h2>
+        <h2>6. Contrato de Integração da API</h2>
       </div>
 
       <div class="glass-card">
@@ -1292,13 +2826,13 @@
       </div>
     </section>
 
-    <!-- 6. SIMULADOR INTERATIVO -->
+    <!-- 7. SIMULADOR INTERATIVO -->
     <section id="simulador-api" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg>
         </div>
-        <h2>6. Simulador Interativo da API</h2>
+        <h2>7. Simulador Interativo da API</h2>
       </div>
 
       <div class="simulator-box">
@@ -1404,13 +2938,13 @@
       </div>
     </section>
 
-    <!-- 7. RESULTADOS PARA A EQUIPE DE NEGÓCIO -->
+    <!-- 8. RESULTADOS PARA A EQUIPE DE NEGÓCIO -->
     <section id="resultados-negocio" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
         </div>
-        <h2>7. Resultados e Interpretação para a Equipe de Negócio</h2>
+        <h2>8. Resultados e Interpretação para a Equipe de Negócio</h2>
       </div>
 
       <!-- Métricas Traduzidas para Negócio -->
@@ -1682,16 +3216,280 @@
             <span style="color: #38bdf8;">→ <strong>Argumento de Venda:</strong></span> <em>"Apartamento com metragem ampla (85m²) oferecendo custo por m² de oportunidade, pronto para compradores que priorizam espaço sem pagar o valor inflacionado das zonas centrais."</em>
           </div>
         </div>
+
+        <!-- Estudo de Caso Completo: Jardim Botânico (32 Elementos Explicados) -->
+        <div style="margin-top: 24px; padding: 22px; background: #070b14; border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h4 style="color: #34d399; font-size: 17px; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <span>💎 Estudo de Caso de Alto Padrão: Jardim Botânico (R$ 801.852,60)</span>
+            </h4>
+            <span class="tag tag-accent">Interpretação Completa dos 32 Campos</span>
+          </div>
+
+          <p style="color: var(--text-muted); font-size: 13.5px; margin-bottom: 16px;">
+            Abaixo está a <strong>tradução comercial elemento por elemento</strong> do retorno da API para um apartamento de 85 m² no <strong>Jardim Botânico (Zona Sul)</strong>, orientando corretores e diretores comerciais sobre como usar cada métrica para fechar vendas e defender margens:
+          </p>
+
+          <div class="scroll-hint">
+            <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+            <span>Dica: arraste horizontalmente para conferir todas as colunas da tabela</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 220px;">Campo no JSON</th>
+                  <th style="width: 140px;">Valor Retornado</th>
+                  <th style="width: 160px;">Conceito Imobiliário</th>
+                  <th>Interpretação Prática para a Equipe de Negócio & Roteiro de Conversa</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- GRUPO 1: PRECIFICAÇÃO BASE -->
+                <tr style="background: rgba(16, 185, 129, 0.05);">
+                  <td colspan="4" style="font-weight: 700; color: #6ee7b7; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.5px;">
+                    1. Identificação e Precificação Base do Imóvel
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>valor_previsto</code></td>
+                  <td><strong style="color: #fff;">R$ 801.852,60</strong></td>
+                  <td>Preço Justo Algorítmico</td>
+                  <td><strong>Âncora de Avaliação:</strong> O valor central estimado pelo comitê de Machine Learning. Use como o preço sugerido de anúncio ou proposta inicial firme.</td>
+                </tr>
+                <tr>
+                  <td><code>valor_m2_previsto</code></td>
+                  <td><strong style="color: #38bdf8;">R$ 9.433,56 / m²</strong></td>
+                  <td>Valor Unitário de Área</td>
+                  <td><strong>Métrica de Equalização:</strong> Permite comparar esta unidade de 85 m² com apartamentos de outros tamanhos no mesmo bairro ou condomínio.</td>
+                </tr>
+                <tr>
+                  <td><code>Zona</code></td>
+                  <td><code>"Zona Sul"</code></td>
+                  <td>Macrorregião</td>
+                  <td>Região de maior prestígio e valorização imobiliária em Ribeirão Preto, com maior liquidez para o segmento de médio-alto padrão.</td>
+                </tr>
+                <tr>
+                  <td><code>Bairro</code></td>
+                  <td><code>"Jardim Botânico"</code></td>
+                  <td>Micro-localização</td>
+                  <td>Bairro nobre consolidado com ampla infraestrutura, parques e gastronomia, justificando ticket médio superior à média municipal.</td>
+                </tr>
+
+                <!-- GRUPO 2: CONTEXTO GLOBAL (RIBEIRÃO PRETO) -->
+                <tr style="background: rgba(99, 102, 241, 0.05);">
+                  <td colspan="4" style="font-weight: 700; color: #a5b4fc; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.5px;">
+                    2. Contexto Macrolocal: Cidade de Ribeirão Preto (Nível Global)
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>global_mediana_mercado</code></td>
+                  <td>R$ 290.000,00</td>
+                  <td>Mediana Municipal</td>
+                  <td>Metade dos apartamentos vendidos em toda a cidade custa até R$ 290 mil. Demonstra o padrão popular/médio do município como um todo.</td>
+                </tr>
+                <tr>
+                  <td><code>global_media_mercado</code></td>
+                  <td>R$ 422.828,81</td>
+                  <td>Média Municipal</td>
+                  <td>Média aritmética de Ribeirão Preto (puxada para cima pelos imóveis de alto padrão).</td>
+                </tr>
+                <tr>
+                  <td><code>global_mediana_m2_mercado</code></td>
+                  <td>R$ 4.444,44 / m²</td>
+                  <td>Mediana do m² Urbano</td>
+                  <td>Preço mediano do metro quadrado na cidade. Balizador macro de custo construtivo e terreno em Ribeirão Preto.</td>
+                </tr>
+                <tr>
+                  <td><code>diferenca_perc_global</code></td>
+                  <td><span style="color: #fbbf24; font-weight: 700;">+176,50%</span></td>
+                  <td>Desvio sobre a Média Urbana</td>
+                  <td><strong>Enquadramento de Alto Padrão:</strong> Este imóvel custa quase 3 vezes a média da cidade. Mostra ao cliente que se trata de um produto exclusivo do topo da pirâmide.</td>
+                </tr>
+                <tr>
+                  <td><code>indice_imovel_global</code></td>
+                  <td><span style="color: #a78bfa; font-weight: 700;">2,12x</span></td>
+                  <td>Múltiplo do m² Municipal</td>
+                  <td>O m² desta unidade (R$ 9.433/m²) é <strong>2,12 vezes mais valorizado</strong> que a mediana municipal (R$ 4.444/m²), atestando a nobreza da localização.</td>
+                </tr>
+                <tr>
+                  <td><code>global_faixa_segura_piso</code></td>
+                  <td>R$ 721.667,34</td>
+                  <td>Piso Global Seguro (−10%)</td>
+                  <td>Valor mínimo de proteção patrimonial considerando o benchmark de 10% de margem operacional.</td>
+                </tr>
+                <tr>
+                  <td><code>global_faixa_segura_teto</code></td>
+                  <td>R$ 882.037,86</td>
+                  <td>Teto Global Seguro (+10%)</td>
+                  <td>Valor máximo aceitável de anúncio caso o apartamento conte com diferenciais exclusivos (andar alto, armários planejados de luxo).</td>
+                </tr>
+
+                <!-- GRUPO 3: CONTEXTO REGIONAL (ZONA SUL) -->
+                <tr style="background: rgba(6, 182, 212, 0.05);">
+                  <td colspan="4" style="font-weight: 700; color: #67e8f9; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.5px;">
+                    3. Contexto Regional: Zona Sul
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>zona_mediana_mercado</code></td>
+                  <td>R$ 480.000,00</td>
+                  <td>Mediana da Zona Sul</td>
+                  <td>O ponto médio dos imóveis da Zona Sul é R$ 480 mil, mostrando que a zona opera em patamar 65% acima da cidade.</td>
+                </tr>
+                <tr>
+                  <td><code>zona_media_mercado</code></td>
+                  <td>R$ 548.232,96</td>
+                  <td>Média da Zona Sul</td>
+                  <td>Valor médio de negociação dos apartamentos situados na Zona Sul.</td>
+                </tr>
+                <tr>
+                  <td><code>zona_mediana_m2_mercado</code></td>
+                  <td>R$ 6.470,59 / m²</td>
+                  <td>Mediana do m² na Zona</td>
+                  <td>Patamar de referência do metro quadrado da Zona Sul como um todo.</td>
+                </tr>
+                <tr>
+                  <td><code>zona_valor_previsto</code></td>
+                  <td>R$ 801.852,60</td>
+                  <td>Média do Lote na Zona</td>
+                  <td>Média das previsões para os imóveis da Zona Sul enviados na chamada (idêntica ao valor unitário em requisição individual).</td>
+                </tr>
+                <tr>
+                  <td><code>valor_m2_previsto_zona</code></td>
+                  <td>R$ 9.433,56 / m²</td>
+                  <td>Média do m² no Lote</td>
+                  <td>Preço médio do metro quadrado previsto para as unidades da Zona Sul no lote avaliado.</td>
+                </tr>
+                <tr>
+                  <td><code>diferenca_perc_zona</code></td>
+                  <td><span style="color: #fbbf24; font-weight: 700;">+67,05%</span></td>
+                  <td>Desvio sobre a Zona Sul</td>
+                  <td>O apartamento está <strong>67% acima da média da Zona Sul</strong>, justificando que não é um padrão comum da região, mas sim um produto premium.</td>
+                </tr>
+                <tr>
+                  <td><code>indice_imovel_zona</code></td>
+                  <td><span style="color: #a78bfa; font-weight: 700;">1,46x</span></td>
+                  <td>Múltiplo do m² da Zona</td>
+                  <td>O metro quadrado está <strong>46% acima da mediana da Zona Sul</strong>, evidenciando o diferencial competitivo do Jardim Botânico.</td>
+                </tr>
+                <tr>
+                  <td><code>zona_faixa_segura_piso</code></td>
+                  <td>R$ 721.667,34</td>
+                  <td>Piso Regional (−10%)</td>
+                  <td>Piso de proteção de margem para evitar subprecificação em negociações na Zona Sul.</td>
+                </tr>
+                <tr>
+                  <td><code>zona_faixa_segura_teto</code></td>
+                  <td>R$ 882.037,86</td>
+                  <td>Teto Regional (+10%)</td>
+                  <td>Teto recomendado para margem de negociação e gordura de contraproposta na Zona Sul.</td>
+                </tr>
+
+                <!-- GRUPO 4: CONTEXTO LOCAL (JARDIM BOTÂNICO) -->
+                <tr style="background: rgba(245, 158, 11, 0.05);">
+                  <td colspan="4" style="font-weight: 700; color: #fcd34d; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.5px;">
+                    4. Contexto Microlocal: Jardim Botânico (Nível Bairro)
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>bairro_mediana_mercado</code></td>
+                  <td>R$ 440.000,00</td>
+                  <td>Mediana do Bairro</td>
+                  <td>Metade dos apartamentos do Jardim Botânico custa até R$ 440 mil (bairro com mix de unidades menores de 1-2 quartos e grandes plantas).</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_media_mercado</code></td>
+                  <td>R$ 506.000,00</td>
+                  <td>Média do Bairro</td>
+                  <td>Ticket médio dos apartamentos negociados no Jardim Botânico.</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_mediana_m2_mercado</code></td>
+                  <td>R$ 7.428,00 / m²</td>
+                  <td>Mediana do m² no Bairro</td>
+                  <td><strong>Referência Chave:</strong> O m² de mercado típico no Jardim Botânico gira em torno de R$ 7,4 mil/m².</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_valor_previsto</code></td>
+                  <td>R$ 801.852,60</td>
+                  <td>Média do Lote no Bairro</td>
+                  <td>Média das previsões para os apartamentos do Jardim Botânico incluídos na mesma requisição.</td>
+                </tr>
+                <tr>
+                  <td><code>valor_m2_previsto_bairro</code></td>
+                  <td>R$ 9.433,56 / m²</td>
+                  <td>Média do m² no Bairro</td>
+                  <td>Preço médio previsto por m² para as unidades do Jardim Botânico no lote.</td>
+                </tr>
+                <tr>
+                  <td><code>diferenca_perc_bairro</code></td>
+                  <td><span style="color: #fbbf24; font-weight: 700;">+82,24%</span></td>
+                  <td>Desvio sobre o Bairro</td>
+                  <td>O imóvel custa 82% a mais que a média do Jardim Botânico porque combina <strong>planta de 85 m² + 2 vagas + 2 banheiros</strong>, superando as plantas compactas locais.</td>
+                </tr>
+                <tr>
+                  <td><code>indice_imovel_bairro</code></td>
+                  <td><span style="color: #34d399; font-weight: 700;">1,27x</span></td>
+                  <td>Múltiplo do m² do Bairro</td>
+                  <td><strong>Defesa do Preço:</strong> O m² previsto (R$ 9.433/m²) é <strong>27% mais valorizado</strong> que a mediana do bairro (R$ 7.428/m²). Justifica-se por padrão construtivo superior, vista ou lazer completo.</td>
+                </tr>
+
+                <!-- GRUPO 5: POLÍTICA COMERCIAL E FECHAMENTO -->
+                <tr style="background: rgba(239, 68, 68, 0.05);">
+                  <td colspan="4" style="font-weight: 700; color: #f87171; text-transform: uppercase; font-size: 11.5px; letter-spacing: 0.5px;">
+                    5. Estratégia de Negociação, Margens de Desconto e Fechamento
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>bairro_desconto_5</code></td>
+                  <td>R$ 761.759,97</td>
+                  <td>Desconto Cortesia (5%)</td>
+                  <td><strong>Negociação Rápida:</strong> Concessão inicial de fechamento para pagamento à vista ou cliente com crédito pré-aprovado. Preserva 95% da margem.</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_desconto_10</code></td>
+                  <td>R$ 721.667,34</td>
+                  <td>Desconto Comercial (10%)</td>
+                  <td><strong>Limite de Flexibilidade do Corretor:</strong> Oferta para destravar negociação travada. Corresponde exatamente ao piso de segurança.</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_desconto_15</code></td>
+                  <td>R$ 681.574,71</td>
+                  <td>Desconto Agressivo (15%)</td>
+                  <td><strong>Zona de Alerta de Deságio:</strong> Aceitável apenas em condições extraordinárias (proprietário com urgência extrema de liquidez).</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_faixa_segura_piso</code></td>
+                  <td><strong style="color: #f87171;">R$ 721.667,34</strong></td>
+                  <td>Piso Seguro de Venda</td>
+                  <td><strong>Linha Vermelha:</strong> O corretor <em>nunca deve aceitar propostas abaixo deste valor</em> sem autorização expressa da diretoria comercial.</td>
+                </tr>
+                <tr>
+                  <td><code>bairro_faixa_segura_teto</code></td>
+                  <td><strong style="color: #34d399;">R$ 882.037,86</strong></td>
+                  <td>Teto Seguro de Venda</td>
+                  <td><strong>Gordura de Anúncio:</strong> Preço máximo inicial para colocar no portal imobiliário garantindo margem para concessão de desconto sem corroer o preço justo.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top: 16px; padding: 14px; background: rgba(16, 185, 129, 0.1); border-left: 4px solid var(--accent); border-radius: 6px; font-size: 13px; color: #e2e8f0; line-height: 1.6;">
+            <strong>🎙️ Pitch Comercial Pronto para o Corretor fechar a R$ 800 mil:</strong><br>
+            <em>"O valor de R$ 801.850,00 foi validado pelo comitê de inteligência de mercado com base em 5.712 transações reais de Ribeirão Preto. No Jardim Botânico, a mediana do metro quadrado é de R$ 7.428,00; este apartamento foi precificado a R$ 9.433,00/m² (índice 1,27x) devido aos diferenciais de 85 m², 2 vagas cobertas e condomínio de alto padrão. Para fechamento à vista nesta semana, temos margem aprovada até o piso seguro de R$ 761.700,00 (desconto de 5%), garantindo uma compra sólida dentro do corredor de segurança patrimonial."</em>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- 8. COMO EXECUTAR -->
+    <!-- 9. COMO EXECUTAR -->
     <section id="como-executar" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </div>
-        <h2>8. Como Executar o Projeto</h2>
+        <h2>9. Como Executar o Projeto</h2>
       </div>
 
       <div class="glass-card">
@@ -1764,13 +3562,13 @@
       </div>
     </section>
 
-    <!-- 9. OBSERVABILIDADE -->
+    <!-- 10. OBSERVABILIDADE -->
     <section id="observabilidade" class="doc-section">
       <div class="section-header">
         <div class="section-icon">
           <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
         </div>
-        <h2>9. Observabilidade & Monitoramento</h2>
+        <h2>10. Observabilidade & Monitoramento</h2>
       </div>
 
       <div class="grid-3" style="margin-bottom: 24px;">
@@ -1906,6 +3704,10 @@
           <button class="tag-filter" onclick="filtrarCategoria('Sistema', this)">Recursos de Sistema</button>
         </div>
 
+        <div class="scroll-hint">
+          <svg viewBox="0 0 24 24"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+          <span>Dica: arraste horizontalmente para conferir labels e descrições das métricas</span>
+        </div>
         <div class="table-container">
           <table id="tabelaMetricasObs">
             <thead>
@@ -2818,11 +4620,60 @@
       }
     }
 
-    // Inicia simulação inicial
+    // =========================================================================
+    // CONTROLES DE RESPONSIVIDADE & NAVEGAÇÃO MOBILE
+    // =========================================================================
+
+    function abrirSidebar() {
+      document.body.classList.add("sidebar-open");
+    }
+
+    function fecharSidebar() {
+      document.body.classList.remove("sidebar-open");
+    }
+
+    // Fecha o menu lateral automaticamente ao clicar em um link em dispositivos móveis
+    document.querySelectorAll("aside.sidebar .nav-link").forEach(link => {
+      link.addEventListener("click", () => {
+        if (window.innerWidth <= 1024) {
+          fecharSidebar();
+        }
+      });
+    });
+
+    // Fecha o menu lateral ao pressionar a tecla Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.body.classList.contains("sidebar-open")) {
+        fecharSidebar();
+      }
+    });
+
+    // Controle do Botão Flutuante Voltar ao Topo
+    const backToTopBtn = document.getElementById("backToTopBtn");
+    window.addEventListener("scroll", () => {
+      if (backToTopBtn) {
+        if (window.scrollY > 350) {
+          backToTopBtn.classList.add("visible");
+        } else {
+          backToTopBtn.classList.remove("visible");
+        }
+      }
+    });
+
+    function voltarAoTopo() {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Inicia simulação inicial e binds de carregamento
     window.addEventListener("DOMContentLoaded", () => {
       atualizarBairros();
       filtrarTabelaMetricas();
     });
   </script>
+
+  <!-- Botão Flutuante Voltar ao Topo -->
+  <button id="backToTopBtn" class="back-to-top" onclick="voltarAoTopo()" aria-label="Voltar ao topo da página" title="Voltar ao topo">
+    <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+  </button>
 </body>
 </html>

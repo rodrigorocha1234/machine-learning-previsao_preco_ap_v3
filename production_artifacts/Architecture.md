@@ -19,22 +19,43 @@ Esta descrição substitui o desenho inicial como referência operacional. [Requ
 | `observabilidade_metricas` | Telemetria de treino/serving e snapshot persistente |
 | `orquestracao_pipeline` | Contexto mutável e execução sequencial das etapas |
 
-## Fluxo de dados
+## Fluxo de dados e as 20 etapas determinísticas
+
+O fluxo de treinamento e homologação é executado pelo `ExecutorEsteira` em 20 etapas sequenciais e estritas. Cada etapa implementa o contrato `ContratoEtapa` e atua sobre o `ContextoExecucao`. Consulte a documentação completa em [docs/fluxo_das_etapas.md](../docs/fluxo_das_etapas.md).
 
 ```mermaid
 flowchart TD
-    YAML[Configuração YAML] --> Pipeline[ExecutorEsteira]
-    Excel[Base Excel] --> Pipeline
-    Pipeline --> Staging[Staging SQLite]
-    Pipeline --> Dev[Desenvolvimento: 80%]
-    Pipeline --> Holdout[Holdout lógico: 20%]
-    Dev --> CV[CV aninhada e comparação]
-    CV --> Final[Tuning dos selecionados e treino individual ou VotingRegressor]
-    Final --> Avaliacao[Avaliação do holdout]
-    Holdout --> Avaliacao
-    Avaliacao --> MLflow[Tracking e Registry no fluxo completo]
-    MLflow --> Serving[Aplicação nativa de scoring MLflow]
-    Serving --> API[Previsões e referências geográficas]
+    subgraph FASE1[Fase I: Ingestão e Staging]
+        E01[01 Carregar Config] --> E02[02 Validar Config]
+        E02 --> E03[03 Carregar Dados]
+        E03 --> E04[04 Validar Dados]
+        E04 --> E05[05 Staging SQLite]
+    end
+    subgraph FASE2[Fase II: Isolamento e Dados]
+        E05 --> E06[06 Separar Holdout 80/20]
+        E06 --> E07[07 Bloquear Holdout no Cofre]
+        E07 --> E08[08 EDA Treino]
+        E08 --> E09[09 Detecção Drift]
+    end
+    subgraph FASE3[Fase III: Validação e Seleção]
+        E09 --> E10[10 Nested CV 15x5 folds]
+        E10 --> E11[11 Estatística Friedman/Nemenyi]
+        E11 --> E12[12 Seleção Campeão/Comitê]
+    end
+    subgraph FASE4[Fase IV: Otimização Final]
+        E12 --> E13[13 Tuning Final 100% Treino]
+        E13 --> E14[14 Treino Final e Motor Imobiliário]
+    end
+    subgraph FASE5[Fase V: Avaliação Cega]
+        E14 --> E15[15 Congelar Configuração]
+        E15 --> E16[16 Abrir Holdout com Chave]
+        E16 --> E17[17 Avaliação Holdout Cego]
+        E17 --> E18[18 Regras Negócio 32 Campos]
+    end
+    subgraph FASE6[Fase VI: Publicação e Serving]
+        E18 --> E19[19 Rastreamento MLflow PyFunc]
+        E19 --> E20[20 Serving REST :8080]
+    end
 ```
 
 O pré-processamento fica dentro do `Pipeline` de cada fold. O alvo não recebe transformação logarítmica no fluxo atual. A classe `DivisorEstratificado` usa `train_test_split` sem `stratify`; o nome não indica estratificação efetiva.
