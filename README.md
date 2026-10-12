@@ -421,11 +421,9 @@ Abaixo está a **tradução comercial elemento por elemento** do retorno da API 
 
 # 6 – Demonstração do projeto:*
 
-{% include youtube.html 
-   id="gMFt4OhIO2w" 
-   title="Usado multiagentes no google antigravity para construir um sistema de Previsão inteligente de preço de apartamento para a cidade de Ribeirão Preto"
-%}
 
+
+[![Assistir ao vídeo de demonstração do projeto](https://img.shields.io/badge/🎬%20Assistir%20ao%20vídeo-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/gMFt4OhIO2w)
 
 
 [Link do reposítório](https://github.com/rodrigorocha1234/machine-learning-previsao_preco_ap_v3)
