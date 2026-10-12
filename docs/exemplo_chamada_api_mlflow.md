@@ -596,11 +596,15 @@ Ribeirão Preto possui dinâmicas imobiliárias muito distintas entre suas 5 mac
 
 | Zona | Bairro Representativo | Tipologia Típica | Previsão do Modelo | Previsto / m² | Mediana Histórica do Bairro | Índice m² | Faixa Segura (Piso / Teto) | Diagnóstico & Abordagem Comercial |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Zona Sul** | **Jardim Botânico** | 85 m² • 3Q • 2V | **R$ 631.396,73** | R$ 7.428,20/m² | R$ 626.000,00 (R$ 6.934/m²) | **1,07x** | R$ 563,4 mil – R$ 626,0 mil | **Alto Padrão / Parques & Lazer:** Ticket e m² mais nobres da cidade. O índice de 1,07x é defendido pelo condomínio clube e alta liquidez na categoria luxo. |
-| **Zona Leste** | **Jardim Paulista** | 68 m² • 2Q • 1V | **R$ 312.800,00** | R$ 4.600,00/m² | R$ 300.000,00 (R$ 4.600/m²) | **1,00x** | R$ 270,0 mil – R$ 300,0 mil | **Classe Média Consolidada:** Alinhamento exato com a mediana local (1,00x). Segurança de liquidez imediata para famílias e casais jovens. |
-| **Zona Oeste** | **Sumarezinho** | 65 m² • 2Q • 1V | **R$ 275.000,00** | R$ 4.230,77/m² | R$ 245.000,00 (R$ 4.348/m²) | **0,97x** | R$ 220,5 mil – R$ 245,0 mil | **Polo Universitário USP:** Custo por m² 3% abaixo da mediana local. Apelo maciço para investidores focados em locação para estudantes e residentes do HC. |
-| **Zona Norte** | **Campos Elíseos** | 58 m² • 2Q • 1V | **R$ 238.000,00** | R$ 4.103,45/m² | R$ 260.000,00 (R$ 4.167/m²) | **0,98x** | R$ 234,0 mil – R$ 260,0 mil | **1º Imóvel / Bairro Tradicional:** Ticket altamente acessível e custos condominiais baixos. Ideal para programas de crédito habitacional. |
-| **Centro** | **Centro** | 95 m² • 3Q • 1V | **R$ 365.000,00** | R$ 3.842,11/m² | R$ 380.000,00 (R$ 3.842/m²) | **1,00x** | R$ 342,0 mil – R$ 380,0 mil | **Plantas Amplas & Retrofit:** Menor valor por m² da cidade em área consolidada (R$ 3.842/m²). Excelente para quem prioriza espaço e logística a pé. |
+| **Zona Sul** | **Jardim Botânico** | 85 m² • 3Q • 2V | **R$ 631.396,73** | R$ 7.428,20/m² | R$ 626.000,00 (R$ 6.934/m²) | **1,07x** | R$ 568,2 mil – R$ 694,5 mil | **Alto Padrão / Parques & Lazer:** Ticket e m² mais nobres da cidade. O índice de 1,07x é defendido pelo condomínio clube e alta liquidez na categoria luxo. |
+| **Zona Leste** | **Jardim Paulista** | 68 m² • 2Q • 1V | **R$ 312.800,00** | R$ 4.600,00/m² | R$ 300.000,00 (R$ 4.600/m²) | **1,00x** | R$ 281,5 mil – R$ 344,0 mil | **Classe Média Consolidada:** Alinhamento exato com a mediana local (1,00x). Segurança de liquidez imediata para famílias e casais jovens. |
+| **Zona Oeste** | **Sumarezinho** | 65 m² • 2Q • 1V | **R$ 275.000,00** | R$ 4.230,77/m² | R$ 245.000,00 (R$ 4.348/m²) | **0,97x** | R$ 247,5 mil – R$ 302,5 mil | **Polo Universitário USP:** Custo por m² 3% abaixo da mediana local. Apelo maciço para investidores focados em locação para estudantes e residentes do HC. O valor previsto entra no centro exato da faixa segura (±10%). |
+| **Zona Norte** | **Campos Elíseos** | 58 m² • 2Q • 1V | **R$ 238.000,00** | R$ 4.103,45/m² | R$ 260.000,00 (R$ 4.167/m²) | **0,98x** | R$ 214,2 mil – R$ 261,8 mil | **1º Imóvel / Bairro Tradicional:** Ticket altamente acessível e custos condominiais baixos. Ideal para programas de crédito habitacional. |
+| **Centro** | **Centro** | 95 m² • 3Q • 1V | **R$ 365.000,00** | R$ 3.842,11/m² | R$ 380.000,00 (R$ 3.842/m²) | **1,00x** | R$ 328,5 mil – R$ 401,5 mil | **Plantas Amplas & Retrofit:** Menor valor por m² da cidade em área consolidada (R$ 3.842/m²). Excelente para quem prioriza espaço e logística a pé. |
+
+> **Nota de Governança Comercial — Faixa Segura de Negociação (RN-05):**
+> A coluna *Faixa Segura (Piso / Teto)* acima é calculada sobre o **Valor Previsto de cada unidade avaliada** (`Piso = -10%` para contrapropostas/à vista \| `Teto = +10%` para vitrine/contraproposta). Desta forma, o valor previsto de R$ 275 mil do Sumarezinho e de qualquer outro imóvel avaliado situa-se precisamente no ponto de equilíbrio operacional.
+> *(Obs: Os campos brutos `bairro_faixa_segura_*` retornados no JSON da API aplicam essa mesma margem de ±10% sobre a mediana de referência do bairro).*
 
 ---
 

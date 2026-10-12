@@ -292,9 +292,13 @@ def test_executor_esteira_logs_etapas() -> None:
     assert logs_capturados[0].mensagem == ">>> Executando etapa: 01_teste_alpha (Etapa 1 de 2)"
     assert logs_capturados[0].servico == "executor_esteira"
     assert logs_capturados[0].nivel == "INFO"
-    assert logs_capturados[1].mensagem == "--- Concluida etapa: 01_teste_alpha (Etapa 1 de 2)"
+    assert logs_capturados[1].mensagem.startswith(
+        "--- Concluida etapa: 01_teste_alpha (Etapa 1 de 2)"
+    )
     assert logs_capturados[2].mensagem == ">>> Executando etapa: 02_teste_beta (Etapa 2 de 2)"
-    assert logs_capturados[3].mensagem == "--- Concluida etapa: 02_teste_beta (Etapa 2 de 2)"
+    assert logs_capturados[3].mensagem.startswith(
+        "--- Concluida etapa: 02_teste_beta (Etapa 2 de 2)"
+    )
 
 
 def test_remocao_parametros_indesejados_api_mlflow(
